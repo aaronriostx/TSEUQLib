@@ -1,0 +1,10 @@
+name: pyoti
+channels:
+  - defaults
+  - https://repo.anaconda.com/pkgs/main
+dependencies:
+  - numpy=1.26.4
+  - pandas
+  - scipy
+  - sympy
+  - line_profiler
