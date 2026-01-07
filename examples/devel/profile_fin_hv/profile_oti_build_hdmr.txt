@@ -1,0 +1,101 @@
+Timer unit: 1e-09 s
+
+Total time: 107.56 s
+File: /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py
+Function: oti_build_hdmr at line 295
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   295                                           @profile
+   296                                           def oti_build_hdmr(y, mu, max_order = None, Ey = None):
+   297                                               """
+   298                                               @brief Computes the High Dimensional Model Representation of
+   299                                                      the TSE built using OTI number y.
+   300                                           
+   301                                                      This uses the conditional expectation function.
+   302                                           
+   303                                                       E[ y | x_{basis[0]}, x_{basis[1]}, ... ]
+   304                                                    
+   305                                               INPUTS:
+   306                                               @param y: OTI with the TSE.
+   307                                               @param mu: structure with the moments of the variables in y.
+   308                                               @param max_order (Optional) Integer representing the maximum order of 
+   309                                                                interaction terms for the calculations.
+   310                                           
+   311                                               """
+   312                                               # HDMRs:
+   313                                               # Use selective expectation to take variables out of the consideration
+   314                                               #
+   315                                               
+   316      1002     771918.0    770.4      0.0      if Ey is None:
+   317                                                   f0   = oti_expectation(y,mu)
+   318                                               else:
+   319      1002     548721.0    547.6      0.0          f0 = Ey # TODO Copy?
+   320                                               #
+   321                                           
+   322      1002     384991.0    384.2      0.0      tse_order = y.order
+   323                                           
+   324                                               # get active basis in the OTI number
+   325      1002   42222664.0  42138.4      0.0      abases = y.get_active_bases()
+   326                                               
+   327      1002     558070.0    557.0      0.0      if len(abases)!=0:
+   328      1002     387754.0    387.0      0.0          dim = abases[-1]
+   329                                               else:
+   330                                                   raise ValueError('OTI number not perturbed.')
+   331                                               # end if
+   332                                           
+   333      1002    1749804.0   1746.3      0.0      var_arr = list( range(1, dim+1) )[::-1]
+   334                                           
+   335      1002     368847.0    368.1      0.0      srch_struct = [[0]]
+   336                                               
+   337      1002     288077.0    287.5      0.0      term_struct = [[0]]
+   338      1002     335517.0    334.8      0.0      HDMR_functions = [[f0]]
+   339                                           
+   340      1002     335251.0    334.6      0.0      if max_order is None:
+   341      1002     946787.0    944.9      0.0          max_order = min(tse_order,dim)
+   342                                               else:
+   343                                                   max_order = min(max_order,min(tse_order,dim))
+   344                                               # end
+   345                                           
+   346                                               # There should be a function that computes the HDMR representation.
+   347      4008    1498863.0    374.0      0.0      for i in range(1,max_order + 1):
+   348                                                   
+   349      3006    7604382.0   2529.7      0.0          terms = list(combinations(var_arr,i))[::-1]
+   350                                                   
+   351      3006    1081128.0    359.7      0.0          nterms = len(terms)
+   352                                                   
+   353      3006    1663290.0    553.3      0.0          srch_struct_level    = [0]*nterms
+   354      3006    1047649.0    348.5      0.0          HDMR_functions_level = [0]*nterms
+   355                                                   
+   356     66132   17001152.0    257.1      0.0          for i_term in range(len(terms)):
+   357                                                       
+   358                                           
+   359     63126   34822320.0    551.6      0.0              term = terms[i_term][::-1]
+   360                                                       
+   361     63126   18571816.0    294.2      0.0              terms[i_term] = term
+   362                                           
+   363     63126   51621788.0    817.8      0.0              idx = coti.imdir(term)[0]
+   364                                           
+   365     63126   16620074.0    263.3      0.0              srch_struct_level[i_term] = idx
+   366                                           
+   367     63126        1e+11    2e+06     98.4              f_hdmr = oti_conditional_expectation(y,mu,term)-f0
+   368                                           
+   369                                                       # Get the terms needed for subtraction
+   370     63126 1191539722.0  18875.6      1.1              rhs_comp = comp_rhs_terms(term, srch_struct)
+   371                                                       
+   372    154308   62073290.0    402.3      0.1              for ordj in range(1,i):
+   373                                                           
+   374    343686  108221533.0    314.9      0.1                  for idx in rhs_comp[ordj-1]:
+   375                                           
+   376    252504  177515680.0    703.0      0.2                      f_hdmr -= HDMR_functions[ordj][idx]
+   377                                                       
+   378                                                       
+   379     63126   21058418.0    333.6      0.0              HDMR_functions_level[i_term] = f_hdmr
+   380                                                   
+   381      3006    1657983.0    551.6      0.0          srch_struct.append(srch_struct_level)
+   382      3006    1074395.0    357.4      0.0          term_struct.append(terms)
+   383      3006     945414.0    314.5      0.0          HDMR_functions.append(HDMR_functions_level)
+   384                                               
+   385      1002     241291.0    240.8      0.0      return HDMR_functions, term_struct, srch_struct
+
+107.56 seconds - /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py:295 - oti_build_hdmr

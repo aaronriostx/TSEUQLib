@@ -1,0 +1,64 @@
+Timer unit: 1e-09 s
+
+Total time: 41.429 s
+File: /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py
+Function: oti_sobol_indices at line 392
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   392                                           @profile
+   393                                           def oti_sobol_indices(y, mu, max_order = None):
+   394                                               """
+   395                                               @brief Computes the sobol up to n interactions using the 
+   396                                                      conditional expectation of the TSE built by the 
+   397                                                      OTI number y.
+   398                                           
+   399                                               E[ y | x_{basis[0]}, x_{basis[1]}, ... ]
+   400                                                    
+   401                                               INPUTS:
+   402                                               @param y: OTI with the TSE.
+   403                                               @param mu: structure with the moments of the variables in y.
+   404                                               @param max_order (Optional) Integer representing the maximum order of 
+   405                                                                interaction terms for the calculations.
+   406                                           
+   407                                               """
+   408                                               # HDMRs:
+   409                                               # Use selective expectation to take variables out of the consideration
+   410                                               #
+   411       501   69702275.0 139126.3      0.2      f0   = oti_expectation(y,mu)
+   412                                           
+   413       501        2e+10    4e+07     47.7      HDMR,term_struct, srch_struct  = oti_build_hdmr(y, mu, max_order=max_order, Ey = f0)
+   414                                               
+   415                                               # Compute partial variances:
+   416                                               
+   417                                               # Start with the Partial Variances.
+   418       501  937008715.0    2e+06      2.3      Vtotal = oti_central_moment(y,2,mu,Ey = f0)
+   419                                               
+   420       501     234907.0    468.9      0.0      V = [[Vtotal]]
+   421                                           
+   422                                               # Now we can compute all the Variances of the HDMRs.
+   423      2004     760651.0    379.6      0.0      for ordi in range(1,len(HDMR)):
+   424      1503     394440.0    262.4      0.0          HDMR_i = HDMR[ordi]
+   425      1503     455060.0    302.8      0.0          nterms = len(HDMR_i)
+   426      1503     778143.0    517.7      0.0          V_i = [0]*nterms
+   427     33066    8246543.0    249.4      0.0          for j in range(nterms):
+   428                                           
+   429     31563        2e+10 653327.0     49.8              V_i[j] = oti_central_moment(HDMR_i[j],2,mu,0)
+   430                                           
+   431      1503     878025.0    584.2      0.0          V.append(V_i)
+   432                                           
+   433                                               # Vtotal = V[0][0]
+   434                                           
+   435       501     179339.0    358.0      0.0      sobol = [[1]]
+   436                                           
+   437                                               # Now we can compute the Sobol from Partial Variances of the HDMRs.
+   438      2004     710565.0    354.6      0.0      for ordi in range(1,len(V)):
+   439      1503     378883.0    252.1      0.0          V_i = V[ordi]
+   440      1503     403014.0    268.1      0.0          nterms = len(V_i)
+   441      1503     789634.0    525.4      0.0          sobol_i = [0]*nterms
+   442     33066    7038025.0    212.8      0.0          for j in range(nterms):
+   443     31563    9954077.0    315.4      0.0              sobol_i[j] = V[ordi][j]/Vtotal
+   444      1503     584791.0    389.1      0.0          sobol.append(sobol_i)
+   445       501     148813.0    297.0      0.0      return sobol, V
+
+ 41.43 seconds - /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py:392 - oti_sobol_indices

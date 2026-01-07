@@ -1,0 +1,66 @@
+Timer unit: 1e-09 s
+
+Total time: 45.3518 s
+File: /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py
+Function: oti_central_moment at line 64
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    64                                           @profile
+    65                                           def oti_central_moment(y,n,mu, Ey = None):
+    66                                               """
+    67                                               @brief Computes the central moment of the TSE expansion given by the OTI number y.
+    68                                                    E[ ( y - E[y] )**n ]
+    69                                                    
+    70                                               INPUTS:
+    71                                               @param[in] y: OTI with the TSE of the function of the value obtained.
+    72                                               @param[in] n: Order of the moment operator. Must be greater or equal than 2.
+    73                                               @param[in] mu: structure with the moments of the variables in y.
+    74                                               @param[in] Ey: (optional) Known value of the expectation of y (E[y]).
+    75                                               
+    76                                               EXAMPLE USAGE:
+    77                                                   
+    78                                                   def func(x,alg=oti):
+    79                                                       return alg.sin(x**2)
+    80                                                   
+    81                                                   x = 0.5+oti.e(1,order = 5)
+    82                                                   
+    83                                                   y = func(x)
+    84                                                   mu_x = 0.5
+    85                                                   si_x = 0.5
+    86                                                   
+    87                                                   # Generate the Moments vector:
+    88                                                   mu = [ [stats.norm.moment(i, loc=0, scale=si_x)] for i in range(1,50)] # computing the 49 first moments.
+    89                                                   
+    90                                                   mu1_tse = oti_expectation(y,mu)
+    91                                                   mu2_tse = oti_central_moment(y,2,mu)
+    92                                                   mu3_tse = oti_central_moment(y,3,mu)
+    93                                                   mu4_tse = oti_central_moment(y,4,mu)
+    94                                                   mu5_tse = oti_central_moment(y,5,mu)
+    95                                                   
+    96                                                   print('Mean:',mu1_tse)
+    97                                                   print('Var: ',mu2_tse)
+    98                                                   print('mu3: ',mu3_tse)
+    99                                                   print('mu4: ',mu4_tse)
+   100                                                   print('mu5: ',mu5_tse)
+   101                                               
+   102                                               """
+   103                                               
+   104                                               # Compute expected value of y.
+   105     64629   16007492.0    247.7      0.0      if Ey is None:
+   106       501   67377433.0 134485.9      0.1          Ey = oti_expectation(y,mu)
+   107                                               
+   108                                               # Change y truncation order of y to n*
+   109     64629   19389966.0    300.0      0.0      newOrd = y.order*n
+   110     64629   76581291.0   1184.9      0.2      e1_null = oti.e(1,order=newOrd)
+   111                                               
+   112                                               # Dummy way to increase truncation order.
+   113     64629   68604493.0   1061.5      0.2      yprime = y + 0 * e1_null
+   114                                               
+   115     64629 1899356013.0  29388.6      4.2      yprime = (yprime-Ey)**n
+   116                                               # Evaluate expectation operator.
+   117     64629        4e+10 668293.8     95.2      M = oti_expectation( yprime, mu )
+   118                                               
+   119     64629   13296382.0    205.7      0.0      return M
+
+ 45.35 seconds - /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py:64 - oti_central_moment

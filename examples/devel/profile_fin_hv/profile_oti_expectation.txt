@@ -1,0 +1,58 @@
+Timer unit: 1e-09 s
+
+Total time: 64.294 s
+File: /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py
+Function: oti_expectation at line 15
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    15                                           @profile
+    16                                           def oti_expectation(y,mu):
+    17                                               """
+    18                                               @brief Computes the expectation of the TSE built by the OTI number y.
+    19                                                    E[ y ]
+    20                                                    
+    21                                               INPUTS:
+    22                                               @param[in] y:  OTI with the TSE.
+    23                                               @param[in] mu: structure with the moments of the variables in y.
+    24                                               
+    25                                               """
+    26     66633   23047296.0    345.9      0.0      if type(y)==float:
+    27                                                   return y
+    28                                               # end if 
+    29                                               
+    30                                               # Direction helper from OTI.
+    31     66633   20542088.0    308.3      0.0      h     = coti.get_dHelp()
+    32                                               
+    33                                               # Gets the order of the number.
+    34     66633   16813555.0    252.3      0.0      order = y.order 
+    35                                               
+    36                                               # get active basis in the OTI number
+    37     66633 2836465507.0  42568.5      4.4      abases = y.get_active_bases()
+    38                                               
+    39     66633   20680181.0    310.4      0.0      if len(abases)!=0:
+    40     66633   17400891.0    261.1      0.0          nbasis = abases[-1]
+    41                                               else:
+    42                                                   return y.real
+    43                                               
+    44     66633   18194074.0    273.0      0.0      M = y.real # Get real part
+    45                                               
+    46    460419  106916438.0    232.2      0.2      for ordi in range(1,order+1):
+    47                                                   
+    48    393786  135457300.0    344.0      0.2          nimord = coti.ndir_order(nbasis,ordi)
+    49                                                   
+    50  62752755        1e+10    199.3     19.4          for idx in range(nimord):
+    51                                                       
+    52                                                       # Get the imaginary coeff. 
+    53                                                       # for the direction given by
+    54                                                       # [idx, ordi]
+    55  62358969        2e+10    257.2     24.9              coeff = y[[idx,ordi]]
+    56                                                       
+    57                                                       # print(ordi, idx)
+    58  62358969        2e+10    241.6     23.4              mu_oi = mu[ordi-1][idx]
+    59                                                       
+    60  62358969        2e+10    280.3     27.2              M += coeff*mu_oi
+    61                                               
+    62     66633   12455384.0    186.9      0.0      return M
+
+ 64.29 seconds - /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py:15 - oti_expectation

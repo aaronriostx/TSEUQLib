@@ -1,0 +1,112 @@
+Timer unit: 1e-09 s
+
+Total time: 57.2117 s
+File: /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py
+Function: oti_conditional_expectation at line 141
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   141                                           @profile
+   142                                           def oti_conditional_expectation( y, mu, basis):
+   143                                               """
+   144                                               @brief Computes the conditional expectation of the TSE 
+   145                                                      from the OTI number y.
+   146                                           
+   147                                                    E[ y | x_{basis[0]}, x_{basis[1]}, ... ]
+   148                                                   
+   149                                               @param[in] y:  OTI with the TSE.
+   150                                               @param[in] mu: structure with the moments of the variables in y.
+   151                                               @param[in] basis: (int or list) Basis to excluded form expectation.
+   152                                               
+   153                                               """
+   154                                               
+   155     63126   20347519.0    322.3      0.0      if type(y)==float:
+   156                                                   return y
+   157                                               
+   158                                               # Direction helper from OTI.
+   159     63126   19407118.0    307.4      0.0      h     = coti.get_dHelp()
+   160                                               
+   161     63126   17457203.0    276.5      0.0      order = y.order # Gets the order of the number.
+   162                                               
+   163                                               # get active basis in the OTI number
+   164     63126 2650354072.0  41985.1      4.6      abases = y.get_active_bases()
+   165                                               
+   166     63126   19822217.0    314.0      0.0      if len(abases)!=0:
+   167     63126   17525868.0    277.6      0.0          nbasis = abases[-1]
+   168                                               else:
+   169                                                   return y.real
+   170                                               
+   171     63126   16948617.0    268.5      0.0      if type(basis)== int:
+   172                                                   blist = [basis]
+   173                                               else:
+   174     63126   12255227.0    194.1      0.0          blist = basis
+   175                                               
+   176                                               # Assume that the result is an OTI with certain 
+   177                                               # number of basis and truncation order.
+   178     63126   53637816.0    849.7      0.1      M = oti.sotinum(y.real,nbasis, order)
+   179                                               # M = y.real # Get real part
+   180                                               
+   181    252504   76310480.0    302.2      0.1      for ordi in range(1,order+1):
+   182                                                   
+   183    189378   67702605.0    357.5      0.1          nimord = coti.ndir_order(nbasis,ordi)
+   184                                                   
+   185   7701372 1700259171.0    220.8      3.0          for idx in range(nimord):
+   186                                                       
+   187                                                       # Get the imaginary coeff.
+   188   7511994 2284070087.0    304.1      4.0              coeff = y[[idx,ordi]]
+   189                                                       
+   190   7511994 1427360812.0    190.0      2.5              i_mu = idx
+   191   7511994 1440604238.0    191.8      2.5              o_mu = ordi
+   192                                                       
+   193                                                       # Start with real direction.
+   194   7511994 1465050109.0    195.0      2.6              i_rem = 0
+   195   7511994 1476802554.0    196.6      2.6              o_rem = 0
+   196                                                       
+   197  25874646 5913758947.0    228.6     10.3              for i in blist:
+   198                                                           
+   199                                                           # Remove imdir i from the main dir.
+   200  18362652 4061980777.0    221.2      7.1                  im = i-1
+   201                                                           
+   202                                                           while True:
+   203                                                               
+   204  25306512 9795750068.0    387.1     17.1                      res = coti.div_imdir_idxord(i_mu,o_mu,im,1)
+   205                                                               
+   206  25306512 6778336204.0    267.8     11.8                      if type(res)==int:
+   207                                                                   #Result is not further divisible by the basis.
+   208  18362652 3347072892.0    182.3      5.9                          break
+   209                                                               else:
+   210                                                                   # Update the new values of idx,order
+   211   6943860 1633324833.0    235.2      2.9                          i_mu, o_mu = res
+   212                                                                   
+   213   6943860 1722926579.0    248.1      3.0                          if o_rem == 0:
+   214                                                                       
+   215   4580142 1020581586.0    222.8      1.8                              i_rem = im
+   216   4580142  967208039.0    211.2      1.7                              o_rem = 1
+   217                                                                       
+   218                                                                   else:
+   219                                                                       
+   220   2363718  929439423.0    393.2      1.6                              i_rem, o_rem = h.mult_dir(im,1,i_rem,o_rem)
+   221                                                       
+   222                                                       
+   223                                                       # Get remaining direction:
+   224   7511994 1994040191.0    265.4      3.5              if o_mu ==0:
+   225                                                           
+   226                                                           # The direction is fully divisible by the basis.
+   227    876750  213296873.0    243.3      0.4                  i_rem = idx
+   228    876750  198444829.0    226.3      0.3                  o_rem = ordi
+   229    876750  220594606.0    251.6      0.4                  mu_oi = 1.0 # does the zeroth order central moment equal to 1.0?
+   230                                                           
+   231                                                       else:
+   232                                                           
+   233                                                           # Find the remaining of the derivative.
+   234   6635244 2157094844.0    325.1      3.8                  mu_oi = mu[o_mu-1][i_mu]
+   235                                                           
+   236                                                       # e_im = oti.e(h.get_fulldir(i_rem,o_rem))
+   237                                                       # M += coeff*mu_oi*e_im
+   238   7511994 3477672354.0    462.9      6.1              # print(coeff,mu_oi)
+   239                                                       
+   240     63126   14283219.0    226.3      0.0              M[[i_rem,o_rem]] += coeff*mu_oi
+   241                                               
+   242                                               return M
+
+ 57.21 seconds - /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py:141 - oti_conditional_expectation

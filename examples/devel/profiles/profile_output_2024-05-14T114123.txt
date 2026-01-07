@@ -1,0 +1,289 @@
+Timer unit: 1e-09 s
+
+Total time: 0.0548755 s
+File: /home/sam/Research/tseuqlib/examples/../tseuqlib/oti_moments.py
+Function: oti_shaply_values_v2 at line 563
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   563                                           @profile
+   564                                           def oti_shaply_values_v2(y,mu, max_order = None):
+   565                                              """
+   566                                               @brief Computes the sobol up to n interactions using the 
+   567                                                       conditional expectation of the TSE built by the 
+   568                                                       OTI number y.
+   569                                           
+   570                                               E[ y | x_{basis[0]}, x_{basis[1]}, ... ]
+   571                                                    
+   572                                               INPUTS:
+   573                                               @param y: OTI with the TSE.
+   574                                               @param mu: structure with the moments of the variables in y.
+   575                                               @param max_order (Optional) Integer representing the maximum order of 
+   576                                                                 interaction terms for the calculations.
+   577                                           
+   578                                               """
+   579                                               # HDMRs:
+   580                                               # Use selective expectation to take variables out of the consideration
+   581                                               #
+   582        19    1282400.0  67494.7      2.3     f0   = oti_expectation(y,mu)
+   583                                           
+   584        19   19648800.0    1e+06     35.8     HDMR,term_struct, srch_struct  = oti_build_hdmr(y, mu, max_order=max_order, Ey = f0)
+   585                                               
+   586                                               # Compute partial variances:
+   587                                               
+   588                                               # Start with the Partial Variances.
+   589        19    2108500.0 110973.7      3.8     Vtotal = oti_central_moment(y,2,mu,Ey = f0)
+   590                                               
+   591        19       7300.0    384.2      0.0     V = [[Vtotal]]
+   592                                           
+   593                                               # Now we can compute all the Variances of the HDMRs.
+   594        38      17900.0    471.1      0.0     for ordi in range(1,len(HDMR)):
+   595        19      11200.0    589.5      0.0          HDMR_i = HDMR[ordi]
+   596        19       6500.0    342.1      0.0          nterms = len(HDMR_i)
+   597        19      13500.0    710.5      0.0          V_i = [0]*nterms
+   598       228      95700.0    419.7      0.2          for j in range(nterms):
+   599                                           
+   600       209   15158000.0  72526.3     27.6              V_i[j] = oti_central_moment(HDMR_i[j],2,mu,0)
+   601                                           
+   602        19      13200.0    694.7      0.0          V.append(V_i)
+   603                                           
+   604        19      17600.0    926.3      0.0     tse_order = y.order
+   605                                           
+   606                                              # get active basis in the OTI number
+   607        19     794500.0  41815.8      1.4     abases = y.get_active_bases()
+   608                                            
+   609        19      13500.0    710.5      0.0     if len(abases)!=0:
+   610        19      14500.0    763.2      0.0       dim = abases[-1]
+   611                                              else:
+   612                                                raise ValueError('OTI number not perturbed.')
+   613                                            # end if
+   614                                           
+   615        19      39400.0   2073.7      0.1     var_arr = list( range(1, dim+1) )[::-1]
+   616                                           
+   617                                              
+   618                                           
+   619        19       7100.0    373.7      0.0     if max_order is None:
+   620        19      23300.0   1226.3      0.0       max_order = min(tse_order,dim)
+   621                                              else:
+   622                                                max_order = min(max_order,min(tse_order,dim))
+   623                                           
+   624                                           
+   625        19      31800.0   1673.7      0.1     var_array_set = set(var_arr)
+   626        19     105100.0   5531.6      0.2     shap = np.zeros((1,dim))
+   627        19      11500.0    605.3      0.0     dict_idx_terms = {}
+   628        38      23200.0    610.5      0.0     for i in range(1,max_order+1):
+   629        19      79500.0   4184.2      0.1         summation_terms = list(combinations(var_arr,i))
+   630       228      86100.0    377.6      0.2         for j in summation_terms:
+   631       209     178500.0    854.1      0.3             idx = coti.imdir(j)[0]
+   632       209    1870800.0   8951.2      3.4             dict_idx_terms['{0},{1}'.format(j[::-1],idx)] =  np.searchsorted(srch_struct[i], idx)
+   633                                           
+   634                                              #
+   635        19      33200.0   1747.4      0.1     dict_idx_terms = [dict()]
+   636        19       9700.0    510.5      0.0     dict_idx_terms[0][0]=0 # zeroth order case.
+   637                                              
+   638        19       5600.0    294.7      0.0     list_imidx_terms = []
+   639        19      11400.0    600.0      0.0     list_imidx_terms.append([0]) # zeroth order case.
+   640                                              
+   641        38      33500.0    881.6      0.1     for i in range(1,max_order+1):
+   642        19       6900.0    363.2      0.0         local_dict = {}
+   643        19       9700.0    510.5      0.0         srch_local = srch_struct[i]
+   644       228      82600.0    362.3      0.2         for local_idx in range(len(srch_local)):
+   645       209      65300.0    312.4      0.1             global_idx = srch_local[local_idx]
+   646       209      71500.0    342.1      0.1             local_dict[global_idx]= local_idx
+   647        19       8800.0    463.2      0.0         dict_idx_terms.append(local_dict)
+   648                                           
+   649        19       9400.0    494.7      0.0     dict_tau = [dict()]
+   650        19      11400.0    600.0      0.0     dict_tau[0][()]=0 # zeroth order case.
+   651        19       9000.0    473.7      0.0     l_values = []
+   652        19      22300.0   1173.7      0.0     flag = True
+   653       228     101600.0    445.6      0.2     for l in range(1,dim + 1):
+   654       209     161700.0    773.7      0.3          if comb(dim,l) > dim:
+   655       153      80600.0    526.8      0.1              dict_tau.append([])
+   656       153      45900.0    300.0      0.1              flag = False
+   657       153      45000.0    294.1      0.1              continue
+   658        56      25600.0    457.1      0.0          if flag:
+   659        39      32900.0    843.6      0.1              l_values.append(l)
+   660        56     119900.0   2141.1      0.2          summation_terms = list(combinations(var_arr,l))
+   661                                                   
+   662        56      19600.0    350.0      0.0          i = 0
+   663        56      24700.0    441.1      0.0          local_dict = {}
+   664       491     186600.0    380.0      0.3          for j in summation_terms:
+   665       435     161200.0    370.6      0.3              tau_j = 0
+   666       870     475800.0    546.9      0.9              for k in range(1,min(l+1, tse_order+1)):
+   667       435     463500.0   1065.5      0.8                      summation_terms_V_j =  set(combinations(j,k))
+   668      3511    1351500.0    384.9      2.5                      for idx1 in summation_terms_V_j:
+   669      3076    1733700.0    563.6      3.2                              idx_j = coti.imdir(idx1)[0]
+   670      3076    1144400.0    372.0      2.1                              idx_j  = dict_idx_terms[k][idx_j]#[dict_idx_terms['{0},{1}'.format(idx1,idx_j)]
+   671      3076    1080000.0    351.1      2.0                              var = V[k][idx_j]
+   672      3076    1181000.0    383.9      2.2                              tau_j = tau_j + var
+   673       435     357800.0    822.5      0.7              local_dict[tuple(sorted(j))] = tau_j
+   674        56      32800.0    585.7      0.1          dict_tau.append(local_dict)
+   675        56      51100.0    912.5      0.1          flag = True
+   676                                              
+   677                                           
+   678        19      44600.0   2347.4      0.1     shap = np.zeros((1,dim))
+   679       228      89700.0    393.4      0.2     for i in range(1,dim+1):
+   680       209     200200.0    957.9      0.4          arr_set_shap_i = var_array_set - set([i])
+   681       630     257100.0    408.1      0.5          for l in l_values:
+   682       421     395800.0    940.1      0.7              summation_terms = list(combinations(arr_set_shap_i,l-1))
+   683                                                       
+   684                                               
+   685       845     388100.0    459.3      0.7              for j in summation_terms:
+   686       424     244100.0    575.7      0.4                  j = set(j)
+   687       424     418100.0    986.1      0.8                  j_plus_i = j.union(set([i]))
+   688       424     215900.0    509.2      0.4                  idx_j = tuple(j)
+   689       424     227500.0    536.6      0.4                  idx_j_plus_i = tuple(j_plus_i)
+   690       424     353300.0    833.3      0.6                  tau_j_plus_i= dict_tau[l][tuple(sorted(idx_j_plus_i))]
+   691       424     303800.0    716.5      0.6                  tau_j = dict_tau[l-1][tuple(sorted(idx_j))]
+   692       424     594100.0   1401.2      1.1                  shap[0,i-1] = shap[0,i-1] + (comb(dim - 1, len(j)))**(-1)*(tau_j_plus_i - tau_j)
+   693                                                
+   694                                           
+   695                                               
+   696        19     216600.0  11400.0      0.4     return (1/dim)*shap
+
+Total time: 0.0819609 s
+File: /home/sam/Research/tseuqlib/examples/../tseuqlib/oti_moments.py
+Function: oti_shaply_values_v3 at line 699
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   699                                           @profile
+   700                                           def oti_shaply_values_v3(y,mu, max_order = None):
+   701                                              """
+   702                                               @brief Computes the sobol up to n interactions using the 
+   703                                                       conditional expectation of the TSE built by the 
+   704                                                       OTI number y.
+   705                                           
+   706                                               E[ y | x_{basis[0]}, x_{basis[1]}, ... ]
+   707                                                    
+   708                                               INPUTS:
+   709                                               @param y: OTI with the TSE.
+   710                                               @param mu: structure with the moments of the variables in y.
+   711                                               @param max_order (Optional) Integer representing the maximum order of 
+   712                                                                 interaction terms for the calculations.
+   713                                           
+   714                                               """
+   715                                               # HDMRs:
+   716                                               # Use selective expectation to take variables out of the consideration
+   717                                               #
+   718        19    1173300.0  61752.6      1.4     f0   = oti_expectation(y,mu)
+   719                                           
+   720        19   19157300.0    1e+06     23.4     HDMR,term_struct, srch_struct  = oti_build_hdmr(y, mu, max_order=max_order, Ey = f0)
+   721                                               
+   722                                               # Compute partial variances:
+   723                                               
+   724                                               # Start with the Partial Variances.
+   725        19    2427300.0 127752.6      3.0     Vtotal = oti_central_moment(y,2,mu,Ey = f0)
+   726                                               
+   727        19      10000.0    526.3      0.0     V = [[Vtotal]]
+   728                                           
+   729                                               # Now we can compute all the Variances of the HDMRs.
+   730        38      24400.0    642.1      0.0     for ordi in range(1,len(HDMR)):
+   731        19       6700.0    352.6      0.0          HDMR_i = HDMR[ordi]
+   732        19       6600.0    347.4      0.0          nterms = len(HDMR_i)
+   733        19      14800.0    778.9      0.0          V_i = [0]*nterms
+   734       228      84400.0    370.2      0.1          for j in range(nterms):
+   735                                           
+   736       209   17139100.0  82005.3     20.9              V_i[j] = oti_central_moment(HDMR_i[j],2,mu,0)
+   737                                           
+   738        19      36700.0   1931.6      0.0          V.append(V_i)
+   739                                           
+   740        19       8700.0    457.9      0.0     tse_order = y.order
+   741                                           
+   742                                              # get active basis in the OTI number
+   743        19     844500.0  44447.4      1.0     abases = y.get_active_bases()
+   744                                            
+   745        19      12700.0    668.4      0.0     if len(abases)!=0:
+   746        19      10100.0    531.6      0.0       dim = abases[-1]
+   747                                              else:
+   748                                                raise ValueError('OTI number not perturbed.')
+   749                                            # end if
+   750                                           
+   751        19      64600.0   3400.0      0.1     var_arr = list( range(1, dim+1) )[::-1]
+   752                                           
+   753                                              
+   754                                           
+   755        19       7200.0    378.9      0.0     if max_order is None:
+   756        19      24200.0   1273.7      0.0       max_order = min(tse_order,dim)
+   757                                              else:
+   758                                                max_order = min(max_order,min(tse_order,dim))
+   759                                           
+   760                                           
+   761        19      28500.0   1500.0      0.0     var_array_set = set(var_arr)
+   762        19      72000.0   3789.5      0.1     shap = np.zeros((1,dim))
+   763        19       8000.0    421.1      0.0     dict_idx_terms = {}
+   764        38      25700.0    676.3      0.0     for i in range(1,max_order+1):
+   765        19      49800.0   2621.1      0.1         summation_terms = list(combinations(var_arr,i))
+   766       228     102000.0    447.4      0.1         for j in summation_terms:
+   767       209     234100.0   1120.1      0.3             idx = coti.imdir(j)[0]
+   768       209    1968800.0   9420.1      2.4             dict_idx_terms['{0},{1}'.format(j[::-1],idx)] =  np.searchsorted(srch_struct[i], idx)
+   769                                           
+   770                                              #
+   771        19      29000.0   1526.3      0.0     dict_idx_terms = [dict()]
+   772        19      14400.0    757.9      0.0     dict_idx_terms[0][0]=0 # zeroth order case.
+   773                                              
+   774                                              
+   775        38      31300.0    823.7      0.0     for i in range(1,max_order+1):
+   776        19       7600.0    400.0      0.0         local_dict = {}
+   777        19       8400.0    442.1      0.0         srch_local = srch_struct[i]
+   778       228      93700.0    411.0      0.1         for local_idx in range(len(srch_local)):
+   779       209      71400.0    341.6      0.1             global_idx = srch_local[local_idx]
+   780       209      73500.0    351.7      0.1             local_dict[global_idx]= local_idx
+   781        19      19700.0   1036.8      0.0         dict_idx_terms.append(local_dict)
+   782                                           
+   783        19      12900.0    678.9      0.0     dict_tau = [dict()]
+   784        19      10600.0    557.9      0.0     dict_tau[0][()]=0 # zeroth order case.
+   785        19       9100.0    478.9      0.0     if dim == 2:
+   786         1        500.0    500.0      0.0         combinations_tau = [1, 2]
+   787        18      11000.0    611.1      0.0     elif dim == 3:
+   788         1        500.0    500.0      0.0         combinations_tau = [1, 2, dim]
+   789                                              else:
+   790        17      11000.0    647.1      0.0         combinations_tau = [1, 2, dim-1, dim]
+   791                                              
+   792        92      40600.0    441.3      0.0     for l in combinations_tau:
+   793        73     222100.0   3042.5      0.3          summation_terms = list(combinations(var_arr,l))
+   794        73      25200.0    345.2      0.0          i = 0
+   795        73      27900.0    382.2      0.0          local_dict = {}
+   796      1834     707900.0    386.0      0.9          for j in summation_terms:
+   797      1761     604600.0    343.3      0.7              tau_j = 0
+   798      3522    2025700.0    575.2      2.5              for k in range(1,min(l+1, tse_order+1)):
+   799      1761    1313500.0    745.9      1.6                      summation_terms_V_j =  set(combinations(j,k))
+   800      7489    3038700.0    405.8      3.7                      for idx1 in summation_terms_V_j:
+   801      5728    3331700.0    581.7      4.1                              idx_j = coti.imdir(idx1)[0]
+   802      5728    2267500.0    395.9      2.8                              idx_j  = dict_idx_terms[k][idx_j]
+   803      5728    2053500.0    358.5      2.5                              var = V[k][idx_j]
+   804      5728    2370700.0    413.9      2.9                              tau_j = tau_j + var
+   805      1761    1317900.0    748.4      1.6              local_dict[tuple(sorted(j))] = tau_j
+   806        73      38100.0    521.9      0.0          dict_tau.append(local_dict)
+   807                                              
+   808                                               
+   809        19      12100.0    636.8      0.0     if dim == 2:
+   810         1        500.0    500.0      0.0         idx_values = [0, 1]
+   811         1        500.0    500.0      0.0         search_values = [1,2]
+   812        18      13800.0    766.7      0.0     elif dim == 3:
+   813         1        700.0    700.0      0.0         idx_values = [0, 1, 2]
+   814         1        600.0    600.0      0.0         search_values = [1,2,3]
+   815                                              else:
+   816        17      17700.0   1041.2      0.0         idx_values = [0, 1, 3]
+   817        17      13600.0    800.0      0.0         search_values = [1,2,dim]
+   818        19      66100.0   3478.9      0.1     shap = np.zeros((1,dim))
+   819       228      92400.0    405.3      0.1     for i in range(1,dim+1):
+   820       209     209600.0   1002.9      0.3          arr_set_shap_i = var_array_set - set([i])
+   821       834     442600.0    530.7      0.5          for l in range(0,len(search_values)):
+   822       625     744300.0   1190.9      0.9              summation_terms = list(combinations(arr_set_shap_i,search_values[l]-1))
+   823                                                       
+   824      3701    1665600.0    450.0      2.0              for j in summation_terms:
+   825      3076    1692300.0    550.2      2.1                  j = set(j)
+   826      3076    2357000.0    766.3      2.9                  j_plus_i = j.union(set([i]))
+   827      3076    1582800.0    514.6      1.9                  idx_j = tuple(j)
+   828      3076    1530100.0    497.4      1.9                  idx_j_plus_i = tuple(j_plus_i)
+   829      3076    2375500.0    772.3      2.9                  tau_j_plus_i= dict_tau[idx_values[l]+1][tuple(sorted(idx_j_plus_i))]
+   830      3076    1926500.0    626.3      2.4                  tau_j = dict_tau[idx_values[l]][tuple(sorted(idx_j))]
+   831      3076    3623900.0   1178.1      4.4                  shap[0,i-1] = shap[0,i-1] + (comb(dim - 1, len(j)))**(-1)*(tau_j_plus_i - tau_j)
+   832                                                
+   833                                           
+   834                                               
+   835        19     261000.0  13736.8      0.3     return (1/dim)*shap
+
+  0.05 seconds - /home/sam/Research/tseuqlib/examples/../tseuqlib/oti_moments.py:563 - oti_shaply_values_v2
+  0.08 seconds - /home/sam/Research/tseuqlib/examples/../tseuqlib/oti_moments.py:699 - oti_shaply_values_v3

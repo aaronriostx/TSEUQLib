@@ -1,0 +1,122 @@
+Timer unit: 1e-09 s
+
+Total time: 62.7327 s
+File: /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py
+Function: oti_expectation at line 15
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    15                                           @profile
+    16                                           def oti_expectation(y,mu):
+    17                                               """
+    18                                               @brief Computes the expectation of the TSE built by the OTI number y.
+    19                                                    E[ y ]
+    20                                                    
+    21                                               INPUTS:
+    22                                               @param[in] y:  OTI with the TSE.
+    23                                               @param[in] mu: structure with the moments of the variables in y.
+    24                                               
+    25                                               """
+    26     66633   22046402.0    330.9      0.0      if type(y)==float:
+    27                                                   return y
+    28                                               # end if 
+    29                                               
+    30                                               # Direction helper from OTI.
+    31     66633   21348742.0    320.4      0.0      h     = coti.get_dHelp()
+    32                                               
+    33                                               # Gets the order of the number.
+    34     66633   15163885.0    227.6      0.0      order = y.order 
+    35                                               
+    36                                               # get active basis in the OTI number
+    37     66633 2855035206.0  42847.2      4.6      abases = y.get_active_bases()
+    38                                               
+    39     66633   22333623.0    335.2      0.0      if len(abases)!=0:
+    40     66633   18260295.0    274.0      0.0          nbasis = abases[-1]
+    41                                               else:
+    42                                                   return y.real
+    43                                               
+    44     66633   18940580.0    284.3      0.0      M = y.real # Get real part
+    45                                               
+    46    460419  113265432.0    246.0      0.2      for ordi in range(1,order+1):
+    47                                                   
+    48    393786  138884554.0    352.7      0.2          nimord = coti.ndir_order(nbasis,ordi)
+    49                                                   
+    50  62752755        1e+10    181.6     18.2          for idx in range(nimord):
+    51                                                       
+    52                                                       # Get the imaginary coeff. 
+    53                                                       # for the direction given by
+    54                                                       # [idx, ordi]
+    55  62358969        2e+10    255.2     25.4              coeff = y[[idx,ordi]]
+    56                                                       
+    57                                                       # print(ordi, idx)
+    58  62358969        1e+10    235.5     23.4              mu_oi = mu[ordi-1][idx]
+    59                                                       
+    60  62358969        2e+10    280.6     27.9              M += coeff*mu_oi
+    61                                               
+    62     66633   12379774.0    185.8      0.0      return M
+
+Total time: 130.068 s
+File: /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py
+Function: oti_central_moment at line 64
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    64                                           @profile
+    65                                           def oti_central_moment(y,n,mu, Ey = None):
+    66                                               """
+    67                                               @brief Computes the central moment of the TSE expansion given by the OTI number y.
+    68                                                    E[ ( y - E[y] )**n ]
+    69                                                    
+    70                                               INPUTS:
+    71                                               @param[in] y: OTI with the TSE of the function of the value obtained.
+    72                                               @param[in] n: Order of the moment operator. Must be greater or equal than 2.
+    73                                               @param[in] mu: structure with the moments of the variables in y.
+    74                                               @param[in] Ey: (optional) Known value of the expectation of y (E[y]).
+    75                                               
+    76                                               EXAMPLE USAGE:
+    77                                                   
+    78                                                   def func(x,alg=oti):
+    79                                                       return alg.sin(x**2)
+    80                                                   
+    81                                                   x = 0.5+oti.e(1,order = 5)
+    82                                                   
+    83                                                   y = func(x)
+    84                                                   mu_x = 0.5
+    85                                                   si_x = 0.5
+    86                                                   
+    87                                                   # Generate the Moments vector:
+    88                                                   mu = [ [stats.norm.moment(i, loc=0, scale=si_x)] for i in range(1,50)] # computing the 49 first moments.
+    89                                                   
+    90                                                   mu1_tse = oti_expectation(y,mu)
+    91                                                   mu2_tse = oti_central_moment(y,2,mu)
+    92                                                   mu3_tse = oti_central_moment(y,3,mu)
+    93                                                   mu4_tse = oti_central_moment(y,4,mu)
+    94                                                   mu5_tse = oti_central_moment(y,5,mu)
+    95                                                   
+    96                                                   print('Mean:',mu1_tse)
+    97                                                   print('Var: ',mu2_tse)
+    98                                                   print('mu3: ',mu3_tse)
+    99                                                   print('mu4: ',mu4_tse)
+   100                                                   print('mu5: ',mu5_tse)
+   101                                               
+   102                                               """
+   103                                               
+   104                                               # Compute expected value of y.
+   105     64629   14212244.0    219.9      0.0      if Ey is None:
+   106       501  151246527.0 301889.3      0.1          Ey = oti_expectation(y,mu)
+   107                                               
+   108                                               # Change y truncation order of y to n*
+   109     64629   18840056.0    291.5      0.0      newOrd = y.order*n
+   110     64629   83716683.0   1295.3      0.1      e1_null = oti.e(1,order=newOrd)
+   111                                               
+   112                                               # Dummy way to increase truncation order.
+   113     64629   69464397.0   1074.8      0.1      yprime = y + 0 * e1_null
+   114                                               
+   115     64629 2078066307.0  32153.8      1.6      yprime = (yprime-Ey)**n
+   116                                               # Evaluate expectation operator.
+   117     64629        1e+11    2e+06     98.1      M = oti_expectation( yprime, mu )
+   118                                               
+   119     64629    9931372.0    153.7      0.0      return M
+
+ 62.73 seconds - /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py:15 - oti_expectation
+130.07 seconds - /home/zkj327/coding/tseuqlib-sam/examples/../tseuqlib/oti_moments.py:64 - oti_central_moment
