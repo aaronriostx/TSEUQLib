@@ -1,6 +1,18 @@
-# TSEUQLib
-Taylor Series Expansion Uncertainty Quantification Library (TSEUQLib): Conduct UQ and sensitivity analysis with the Taylor series expansion surrogate model.
+# TSEUQLib: Taylor Series Expansion Uncertainty Quantification Library
+Construct Taylor series expansions for surrogate modelling. Compute UQ and sensitivity analysis metrics of the Taylor series expansion.
 
+# Prerequisites
+Install OTILib from [Link text](https://github.com/mauriaristi/otilib). This will create a new conda environment with OTILib installed.
+
+Activate the otilib conda environment, for example:
+`conda activate pyoti`
+
+Add the TSEUQLib dependencies to the otilib conda environment with:
+`conda env update -f environment.yml`
+
+
+# Copyright
+LANL **O5031**
 
 © 2025. Triad National Security, LLC. All rights reserved.
 
