@@ -1,8 +1,7 @@
 # TSEUQLib: Taylor Series Expansion Uncertainty Quantification Library
 Construct Taylor series expansions for surrogate modelling. Compute UQ and sensitivity analysis metrics of the Taylor series expansion.
 
-# Overview
-## TSEUQLib Features
+# Features
 
 | Function              | Description                                                     | Symbol |
 |----------------------|-----------------------------------------------------------------|--------|
@@ -31,6 +30,8 @@ conda env update -f environment.yml
 ```
 
 # Usage
+Run the examples in examples/
+
 
 # Copyright
 LANL **O5031**
