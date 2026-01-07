@@ -30,7 +30,7 @@ conda env update -f environment.yml
 ```
 
 # Usage
-Run the examples in examples/ with python. For example, :
+Run the examples in examples/ with python. For example, run the ishigami example by:
 ```bash
 cd TSEUQLib/examples/
 python ishigami.py
