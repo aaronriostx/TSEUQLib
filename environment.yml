@@ -2,9 +2,20 @@ name: pyoti
 channels:
   - defaults
   - https://repo.anaconda.com/pkgs/main
+  - conda-forge
+  - anaconda
 dependencies:
+  - jupyter
+  - jupyter_sphinx
   - numpy=1.26.4
   - pandas
   - scipy
+  - sphinx >=7.1
+  - sphinx-argparse
+  - sphinx-book-theme
+  - sphinx-copybutton >=0.5.1
+  - sphinx-design
+  - sphinx_rtd_theme >=3
+  - sphinxcontrib-bibtex
   - sympy
   - line_profiler
