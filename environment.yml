@@ -9,6 +9,7 @@ dependencies:
   - jupyter_sphinx
   - numpy=1.26.4
   - pandas
+  - seaborn
   - scipy
   - sphinx >=7.1
   - sphinx-argparse
