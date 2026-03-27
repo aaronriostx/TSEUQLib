@@ -165,6 +165,7 @@ from gldpy import GLD
 def plot_gld_diagnostics(
     data        : np.ndarray,
     params      : np.ndarray,
+    xlabel      : str,
     param_type  : str   = "VSL",
     n_grid      : int   = 500,
     label       : str   = "GLD fit",
@@ -204,8 +205,6 @@ def plot_gld_diagnostics(
     data   = np.asarray(data,   dtype=float).ravel()
     N      = len(data)
     gld    = GLD(param_type)
- 
-    xlabel = f"x ({units})" if units else "x"
  
     # ── Evaluation grid (trim extreme tails to avoid boundary artefacts) ─────
     x_lo   = np.quantile(data, 0.001)
@@ -328,4 +327,4 @@ def plot_gld_diagnostics(
  
     return fig, [ax_pdf, ax_cdf, ax_qq]
 
-plot_gld_diagnostics(data, param_MM, savepath='gld_comparison.png')
+plot_gld_diagnostics(data, param_MM, "Fin temp at 450s", savepath='gld_comparison.png')
