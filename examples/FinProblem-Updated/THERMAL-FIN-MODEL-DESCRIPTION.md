@@ -55,4 +55,4 @@ where $T_{0}$ is the initial temperature of the fin at $t=0$. For this model, it
 
 ## Model parameter definitions
 
-In the `fin_params.py` file, the parameters of this model are defined. In this model, we are interested in the thermal response at the fin tip through time, i.e., $\theta(X=0, \tau)$ and $T(X=0, \tau)$. Fin width and thickness are fixed constants ($\delta=4.75 \times 10^{-3} \thinspace \text{m}, \thinspace L = 100 \times 10^{-3} \thinspace \text{m}$). All other model parameters are either defined as random or epistemic variables.
+In the `fin_params.py` file, the parameters of this model are defined. In this model, we are interested in the thermal response at the insulated fin tip through time, i.e., $\theta(X=0, \tau)$ and $T(X=0, \tau)$. Fin width and thickness are fixed constants ($\delta=4.75 \times 10^{-3} \thinspace \text{m}, \thinspace L = 100 \times 10^{-3} \thinspace \text{m}$). All other model parameters are either defined as random or epistemic variables.
