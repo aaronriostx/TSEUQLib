@@ -44,7 +44,7 @@ rv_params = rv.rv_mean_from_ab([rv_pdf_name, rv_a, rv_b])
 # print(rv_params)
 
 # order of Taylor series expansion
-tse_order_max = 22
+tse_order_max = 8
 
 
 # random variable(s) with nominal values at the mean and perturbed with OTI imaginary directions

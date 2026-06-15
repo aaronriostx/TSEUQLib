@@ -310,48 +310,6 @@ plt.legend(fontsize=20, loc='upper right')
 plt.axhline(0, color='k', lw=5)
 plt.savefig('plots/rel_err_rem_m2.png', format='PNG', transparent=True, dpi=300)
 
-"""
-plt.figure(figsize=(9,9))
-lw=5
-plt.semilogy(rem_orders+1, np.abs(y_ev_rem[:,1]), label=r'$E[f]$', lw=lw)
-plt.semilogy(rem_orders+1, np.abs(y_mu2_rem[:,1]), label=r'$V[f]$', lw=lw)
-plt.semilogy(rem_orders+1, np.abs(y_Vi_rem[:,1,0]), label=r'$V_{{1}}$', lw=lw)
-plt.semilogy(rem_orders+1, np.abs(y_Vi_rem[:,1,1]), label=r'$V_{{2}}$', lw=lw)
-plt.semilogy(rem_orders+1, np.abs(y_Vij_rem[:,1,1]), label=r'$V_{{13}}$', lw=lw)
-plt.xlabel(r'$n$', size=20)
-plt.ylabel(r'Error Approximation of $\varepsilon_{{2}}\left[\xi\left[Y_{{n}}\left(\boldsymbol{{x}}\right)\right]\right]$',size=20)
-ax = plt.gca()
-ax.tick_params('x', labelsize=16)
-ax.tick_params('y', labelsize=16)
-# ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-ax.set_xticks(np.arange(min(rem_orders+1), max(rem_orders+1)+1, 1))
-plt.legend(fontsize=20, loc='upper right')
-plt.axhline(0, color='k', lw=2)
-#plt.ylim([-50,])
-plt.savefig('plots/rem_m2.png', format='PNG', transparent=True, dpi=300)
-#plt.show()
-
-
-plt.figure(figsize=(9,9))
-lw=5
-plt.semilogy(rem_orders+1, np.abs(Ef_rel_err[:,1]), label=r'$E[f]$', lw=lw)
-plt.semilogy(rem_orders+1, np.abs(mu2_rel_err[:,1]), label=r'$V[f]$', lw=lw)
-plt.semilogy(rem_orders+1, np.abs(Vi_rel_err[:,1,0]), label=r'$V_{{1}}$', lw=lw)
-plt.semilogy(rem_orders+1, np.abs(Vi_rel_err[:,1,1]), label=r'$V_{{2}}$', lw=lw)
-plt.semilogy(rem_orders+1, np.abs(Vij_rel_err[:,1,1]), label=r'$V_{{13}}$', lw=lw)
-plt.xlabel(r'$n$', size=20)
-plt.ylabel(r'Absolute Relative Error of $\varepsilon_{{2}}\left[\xi\left[Y_{{n}}\left(\boldsymbol{{x}}\right)\right]\right]$', size=20)
-ax = plt.gca()
-ax.tick_params('x', labelsize=16)
-ax.tick_params('y', labelsize=16)
-# ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-ax.set_xticks(np.arange(min(rem_orders+1), max(rem_orders+1)+1, 1))
-plt.legend(fontsize=20, loc='upper right')
-plt.axhline(0, color='k', lw=5)
-plt.savefig('plots/rel_err_rem_m2.png', format='PNG', transparent=True, dpi=300)
-#plt.show()
-"""
-
 # true error
 plt.figure(figsize=(9,9))
 lw=5
