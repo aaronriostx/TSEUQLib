@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -7,6 +8,8 @@ import seaborn as sns
 
 import gldpy
 import fin_problem as fp
+
+os.makedirs("figures", exist_ok=True)
 
 # Load data
 data = np.load("MCS_data.npz")
@@ -29,7 +32,7 @@ plt.grid()
 plt.xlabel('Time [s]')
 plt.ylabel('Temperature [K]')
 plt.tight_layout()
-plt.savefig('MCS_case_1_T_vs_t.png')
+plt.savefig('figures/MCS_case_1_T_vs_t.png')
 plt.close()
 
 # Figure 2: Theta vs t (all samples)
@@ -40,7 +43,7 @@ plt.grid()
 plt.xlabel('Time [s]')
 plt.ylabel(r'$\theta$')
 plt.tight_layout()
-plt.savefig('MCS_case_1_theta_vs_t.png')
+plt.savefig('figures/MCS_case_1_theta_vs_t.png')
 plt.close()
 
 # Figure 3: Expectation of T vs t
@@ -52,7 +55,7 @@ plt.grid()
 plt.xlabel('Time [s]')
 plt.ylabel(r'$\mathbb{E}[T]$ [K]')
 plt.tight_layout()
-plt.savefig('MCS_case_1_T_expectation_vs_t.png')
+plt.savefig('figures/MCS_case_1_T_expectation_vs_t.png')
 plt.close()
 
 def plot_moments(data, filename, t=None, figsize=(12, 8)):
@@ -98,7 +101,7 @@ def plot_moments(data, filename, t=None, figsize=(12, 8)):
     plt.tight_layout()
     plt.savefig(filename)
 
-plot_moments(T, 'MCS_case_1_T_moments_vs_t.png', t=t)
+plot_moments(T, 'figures/MCS_case_1_T_moments_vs_t.png', t=t)
 
 def plot_pairplot(X, y, filename, var_names=None, output_name="Y"):
     """
@@ -140,7 +143,7 @@ print("Y shape:", Y.shape)
 print("Y unique values:", len(np.unique(Y)))
 print("Y min/max:", Y.min(), Y.max())
 
-plot_pairplot(X, Y, 'pairplot.png', var_names=["k", "Cp", "rho", "hU", "Tinf", "Tw", "b"], output_name="Temp at 450s")
+plot_pairplot(X, Y, 'figures/pairplot.png', var_names=["k", "Cp", "rho", "hU", "Tinf", "Tw", "b"], output_name="Temp at 450s")
 
 # TEST: trying out gldpy to get lambda parameters
 def compute_moments(data):
@@ -327,4 +330,4 @@ def plot_gld_diagnostics(
  
     return fig, [ax_pdf, ax_cdf, ax_qq]
 
-plot_gld_diagnostics(data, param_MM, "Fin temp at 450s", savepath='gld_comparison.png')
+plot_gld_diagnostics(data, param_MM, "Fin temp at 450s", savepath='figures/gld_comparison.png')
