@@ -122,3 +122,69 @@ $$
 $$
 
 The partial derivatives $\partial T / \partial y_i$ are functions of time and are evaluated numerically via numerical differentiation at the nominal point.
+
+## Quantifying epistemic contributions via affine and Taylor models (`TSE_mixed_models.py`)
+
+Standard interval arithmetic collapses the result to a single bound $[\underline{T}, \overline{T}]$, discarding information about which uncertainty source drove that width. Affine arithmetic and Taylor models retain symbolic noise variables that carry each source through the calculation.
+
+### Affine model
+
+Each centered epistemic deviation $\delta y_i \in [-\Delta y_i, +\Delta y_i]$ is associated with an independent symbolic noise variable $\varepsilon_i \in [-1, +1]$:
+
+$$
+\delta y_i = \Delta y_i \cdot \varepsilon_i
+$$
+
+Substituting into the 1st-order TSE gives the **affine form** of $\mathbb{E}[T]$:
+
+$$
+\hat{\mathbb{E}}[T(\tau)] = T_0(\tau) + \underbrace{\frac{\partial T}{\partial T_\infty}\bigg|_{\text{nom}} \Delta T_\infty}_{c_1(\tau)} \varepsilon_1 + \underbrace{\frac{\partial T}{\partial T_W}\bigg|_{\text{nom}} \Delta T_W}_{c_2(\tau)} \varepsilon_2 + \underbrace{\frac{\partial T}{\partial b}\bigg|_{\text{nom}} \Delta b}_{c_3(\tau)} \varepsilon_3
+$$
+
+where $T_0(\tau) = T(\boldsymbol{\mu}_X, \mathbf{m}_y)\big|_\tau$ is the nominal temperature history. The coefficients $c_i(\tau)$ are time-varying and encode the sensitivity of $\mathbb{E}[T]$ to each source scaled by its half-width.
+
+Converting the affine form to a standard interval recovers the same bound as before, since $\varepsilon_i \in [-1,+1]$:
+
+$$
+\mathbb{E}[T(\tau)] \in \left[T_0(\tau) - \sum_i |c_i(\tau)|,\;\; T_0(\tau) + \sum_i |c_i(\tau)|\right]
+$$
+
+The key advantage is that each $|c_i(\tau)|$ is the individual half-width contribution of source $i$, making it possible to rank sources at any time step.
+
+### Fractional contribution
+
+The fractional contribution of each source at time $\tau$ is:
+
+$$
+S_i(\tau) = \frac{|c_i(\tau)|}{\displaystyle\sum_j |c_j(\tau)|}
+$$
+
+with $\sum_i S_i(\tau) = 1$. Plotting $S_i(\tau)$ over time reveals how dominance shifts between sources as the fin evolves from transient to steady state.
+
+### Taylor model
+
+A **Taylor model** of order $p$ is a pair $(p(\boldsymbol{\varepsilon}),\, R)$ where $p$ is a multivariate polynomial in the noise variables and $R$ is an interval that rigorously bounds the remainder from truncating the Taylor series:
+
+$$
+\mathbb{E}[T(\tau)] \in p(\boldsymbol{\varepsilon})\big|_{\boldsymbol{\varepsilon}\in[-1,1]^n} + R(\tau)
+$$
+
+For the 1st-order expansion, the polynomial part is the affine form above and the remainder captures 2nd-order and higher contributions:
+
+$$
+R(\tau) = \left[\min_{\boldsymbol{s} \in \{-1,+1\}^n} r(\boldsymbol{s},\tau),\;\; \max_{\boldsymbol{s} \in \{-1,+1\}^n} r(\boldsymbol{s},\tau)\right]
+$$
+
+where
+
+$$
+r(\boldsymbol{s},\tau) = T\!\left(\boldsymbol{\mu}_X,\, \mathbf{m}_y + \boldsymbol{s} \odot \boldsymbol{\Delta y}\right)\bigg|_\tau - \left(T_0(\tau) + \sum_i s_i\, c_i(\tau)\right)
+$$
+
+is the pointwise approximation error evaluated at each of the $2^n$ corners of the epistemic box. The Taylor model enclosure is then:
+
+$$
+\mathbb{E}[T(\tau)] \in \left[T_0(\tau) - \sum_i |c_i(\tau)| + \underline{R}(\tau),\;\; T_0(\tau) + \sum_i |c_i(\tau)| + \overline{R}(\tau)\right]
+$$
+
+The remainder $R$ is zero for a model that is exactly linear in the epistemic parameters; a non-zero $R$ indicates nonlinearity not captured by the 1st-order expansion.

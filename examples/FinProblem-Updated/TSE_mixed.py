@@ -97,12 +97,12 @@ np.savez("TSE_mixed_data.npz",
 
 # ── Plot ───────────────────────────────────────────────────────────────────────
 plt.figure(figsize=(4, 3), dpi=300)
-plt.fill_between(t, T_lb, T_ub, alpha=0.3, color='b', label='Epistemic bounds')
-plt.plot(t, T_nom, 'b', label=r'$\mathbb{E}[T]$ (nominal)')
+plt.fill_between(t, T_lb, T_ub, alpha=0.3, color='b', label='Min./Max. bounds')
+plt.plot(t, T_nom, 'b', label='Nominal')
 plt.grid()
 plt.xlabel('Time [s]')
 plt.ylabel(r'$\mathbb{E}[T]$ [K]')
 plt.legend(fontsize=7)
 plt.tight_layout()
-plt.savefig('figures/TSE_mixed_T_expectation_vs_t.png')
+plt.savefig('figures/TSE_mixed_T_expectation_vs_t.png', transparent=True)
 plt.close()
