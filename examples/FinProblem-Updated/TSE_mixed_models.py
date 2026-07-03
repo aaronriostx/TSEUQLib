@@ -183,7 +183,7 @@ ax2.set_xlabel("Time [s]")
 ax2.set_ylabel("Fractional contribution [%]")
 ax2.set_title("Relative epistemic contributions")
 ax2.set_ylim(0, 100)
-ax2.legend(loc="center right", fontsize=8)
+# ax2.legend(loc="center right", fontsize=8)
 ax2.grid(True, linestyle="--", alpha=0.4)
 
 plt.tight_layout()

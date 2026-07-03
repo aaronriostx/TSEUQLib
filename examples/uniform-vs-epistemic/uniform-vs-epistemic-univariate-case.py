@@ -23,6 +23,8 @@ fig, ax = plt.subplots(2, 2, figsize=(8, 5))
 a = ax[0, 0]
 a.plot([0, 0, 2, 2], [0, 0.5, 0.5, 0], color=blue, lw=2.5)
 a.fill_between([0, 2], [0.5, 0.5], color=blue, alpha=0.15)
+a.axvline(1, color="black", ls="--", lw=1.3)
+a.text(1 + 0.08, 0.65, r"$\mathbb{E}[X]$ = 1", color="black", fontsize=14)
 a.set_xlim(-1, 5)
 a.set_ylim(0, 0.9)
 a.set_title("X ~ U[0,2] (PDF)")
@@ -41,6 +43,7 @@ b.set_title("X = [0,2] (interval)")
 b.set_xlabel("x")
 b.set_yticks([])
 b.text(1, 0.55, "any value", ha="center", color=coral, fontsize=14)
+
 # ---- Bottom-left: PDF of Y = X^2 = 1/(4*sqrt(y)) -----------------------------
 c = ax[1, 0]
 y = np.linspace(0.02, 4, 400)

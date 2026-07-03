@@ -46,7 +46,6 @@ N_inner = 60_000            # aleatory samples per outer point
 F_vals = np.linspace(F_lo, F_hi, M_grid)
 L_vals = np.linspace(L_lo, L_hi, M_grid)
 EE = [(f, l) for f in F_vals for l in L_vals]
-print(EE)
 
 # common stress grid for pointwise envelope (from a pilot pass)
 ymp = np.clip(rng.normal(ymax_mean, ymax_std, 200_000), 1e-6, None)
@@ -96,7 +95,7 @@ ax.plot(grid, cdf_right, color="#185FA5", lw=2.5, zorder=3, label="upper CDF bou
 ax.axvline(allow, color="#A32D2D", lw=1.2, ls=":", zorder=5)
 ax.text(allow + 1, 0.5, f"Failure threshold: \n{allow:.0f} MPa", color="#A32D2D", fontsize=10)
 ax.set_xlabel(r"$\sigma_{max}$ (MPa)")
-ax.set_ylabel(r"CDF, $P(\sigma_{max} ≤ s)$")
+ax.set_ylabel(r"CDF, $F(\sigma_{max})$")
 ax.set_ylim(0, 1)
 # ax.legend(loc="upper right", fontsize=9)
 fig.tight_layout()
