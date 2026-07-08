@@ -71,3 +71,23 @@ print(f"Model evaluations used: {N * (k + 2)}\n")
 print(f"{'input':<8}{'Saltelli':>12}{'analytical':>14}")
 for i in range(k):
     print(f"X{i+1:<7}{S1_saltelli[i]:>12.4f}{S1_true[i]:>14.4f}")
+
+# Crude Monte Carlo
+# Fix every input except Xi at its mean (0, for Uniform(-pi, pi)) and let
+# only Xi vary; the variance of Y over that ensemble estimates Var_i.
+# NOTE: this only recovers the true first-order variance when the model is
+# purely additive. Ishigami has an X1-X3 interaction (b * X3^4 * sin(X1)),
+# so fixing X3 at a single value rather than integrating it out biases the
+# estimate -- expect this to disagree with Saltelli/analytical, especially
+# for X1.
+S1_MC = np.empty(k)
+for i in range(k):
+    X = sample(N, k)
+    for j in range(k):
+        if j != i:
+            X[:, j] = 0
+    S1_MC[i] = ishigami(X).var() / var_Y
+
+print(f"\n{'input':<8}{'Crude MC':>12}")
+for i in range(k):
+    print(f"X{i+1:<7}{S1_MC[i]:>12.4f}")

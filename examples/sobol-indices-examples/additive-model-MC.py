@@ -62,3 +62,23 @@ print(f"Model evaluations used: {N * (k + 2)}\n")
 print(f"{'input':<8}{'Saltelli':>12}")
 for i in range(k):
     print(f"X{i+1:<7}{S1_saltelli[i]:>12.4f}")
+
+# Crude Monte Carlo
+# For an additive model (no interactions), holding all *other* inputs fixed
+# at their mean and varying Xi in isolation gives Var_i directly.
+X = sample(N, k)
+X[:,1] = 0; # Fix X2 at its mean, only X1 varies -> variance due to X1
+V1 = additive_fcn(X).var()
+
+X = sample(N, k)
+X[:,0] = 0; # Fix X1 at its mean, only X2 varies -> variance due to X2
+V2 = additive_fcn(X).var()
+
+X = sample(N, k) # Randomly sample X1 and X2
+Var_y = additive_fcn(X).var()
+
+S1_MC = V1/Var_y
+S2_MC = V2/Var_y
+
+print(f'S1 (MC): {S1_MC}')
+print(f'S2 (MC): {S2_MC}')
