@@ -58,7 +58,7 @@ def plot_one(title, S1_bounds, S2_bounds, filename):
     for t in autotexts:
         t.set_color("black")
         t.set_fontweight("bold")
-    ax_pie.set_title(title, fontsize=11)
+    # ax_pie.set_title(title, fontsize=11)
 
     # ---- error bar chart: range of S1 and S2 (horizontal) ----
     rows = [
