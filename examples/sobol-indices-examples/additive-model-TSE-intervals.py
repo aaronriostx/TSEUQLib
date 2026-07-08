@@ -68,8 +68,8 @@ def plot_one(title, lo, hi, filename):
             fmt="o", color=c, ecolor="black", elinewidth=2, capsize=6,
             markersize=11, markeredgecolor="black", markeredgewidth=1, zorder=3,
         )
-        # ax_bar.text(h + 1.5, yi, f"{h:.1f}%", va="center", fontsize=10)
-        # ax_bar.text(l - 1.5, yi, f"{l:.1f}%", va="center", ha="right", fontsize=10)
+        ax_bar.text(h + 1.5, yi, f"{h:.1f}%", va="center", fontsize=8)
+        ax_bar.text(l - 1.5, yi, f"{l:.1f}%", va="center", ha="right", fontsize=8)
         # ax_bar.text(m, yi + 0.18, f"{m:.1f}%", ha="center", fontsize=9, color="black")
 
     ax_bar.set_yticks(list(y))
