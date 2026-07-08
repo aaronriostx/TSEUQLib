@@ -204,6 +204,19 @@ def compute_S1_bounds(s1_bounds=(0.9, 1.1), s2_bounds=(0.9, 1.1), f1=1.0, f2=2.0
     }
 
 
+def compute_S2_bounds(s1_bounds=(0.9, 1.1), s2_bounds=(0.9, 1.1), f1=1.0, f2=2.0, grid_n=2000):
+    """
+    Bounds for S2 = f2^2*sigma2^2 / (f1^2*sigma1^2 + f2^2*sigma2^2).
+
+    S2(sigma1, sigma2, f1, f2) is exactly S1(sigma2, sigma1, f2, f1) -- the same
+    formula with the X1/X2 roles relabeled -- so this reuses compute_S1_bounds
+    directly instead of duplicating the IA/AA/TM machinery. Note: inside the
+    returned "diagnostics", "gradient" and "hessian_abs_max" are therefore in
+    (d/dsigma2, d/dsigma1) order, not (d/dsigma1, d/dsigma2).
+    """
+    return compute_S1_bounds(s1_bounds=s2_bounds, s2_bounds=s1_bounds, f1=f2, f2=f1, grid_n=grid_n)
+
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
