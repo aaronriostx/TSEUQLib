@@ -11,6 +11,7 @@ Original exmaple from: https://uqpyproject.readthedocs.io/en/latest/auto_example
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 rng = np.random.default_rng(seed=42)
 
@@ -82,3 +83,55 @@ S2_MC = V2/Var_y
 
 print(f'S1 (MC): {S1_MC}')
 print(f'S2 (MC): {S2_MC}')
+
+# Pie chart of the first-order (main-effect) Sobol' indices
+CATEGORICAL = ["#2a78d6", "#1baf7a", "#eda100", "#008300", "#4a3aa7", "#e34948", "#e87ba4", "#eb6834"]
+SURFACE = "#fcfcfb"
+INK = "#0b0b0b"
+
+labels = [f"X{i+1}" for i in range(k)]
+colors = CATEGORICAL[:k]
+
+fig, ax = plt.subplots(figsize=(2, 2))
+wedges, _, _ = ax.pie(
+    S1_saltelli,
+    colors=colors,
+    autopct="%1.1f%%",
+    startangle=90,
+    wedgeprops={"edgecolor": SURFACE, "linewidth": 2},
+    textprops={"color": INK},
+)
+# ax.legend(wedges, labels, title="Input", loc="center left", bbox_to_anchor=(1, 0.5))
+# ax.set_title("First-order Sobol' indices (Saltelli)")
+ax.axis("equal")
+fig.tight_layout()
+plt.savefig('main-sobols-additive-model.png', dpi=300, transparent=True)
+
+# Compute main sobol indices from 1st-order TSE.
+mu_X = np.array([[0,0]]) # mean vector
+sigma_X = np.array([1,1]) # sigma vector
+f0 = additive_fcn(mu_X)
+f_X1 = 1 #df/dX1
+f_X2 = 2 #df/dX1
+V1_TSE = (f_X1**2)*(sigma_X[0]**2)
+V2_TSE = (f_X2**2)*(sigma_X[1]**2)
+Var_y_TSE = V1_TSE + V2_TSE
+S1_TSE = np.array([V1_TSE,V2_TSE])/Var_y_TSE
+
+print(f'S1 (1st-order TSE): {S1_TSE[0]}')
+print(f'S2 (1st-order TSE): {S1_TSE[1]}')
+
+fig, ax = plt.subplots(figsize=(2, 2))
+wedges, _, _ = ax.pie(
+    S1_TSE,
+    colors=colors,
+    autopct="%1.1f%%",
+    startangle=90,
+    wedgeprops={"edgecolor": SURFACE, "linewidth": 2},
+    textprops={"color": INK},
+)
+# ax.legend(wedges, labels, title="Input", loc="center left", bbox_to_anchor=(1, 0.5))
+# ax.set_title("First-order Sobol' indices (Saltelli)")
+ax.axis("equal")
+fig.tight_layout()
+plt.savefig('main-sobols-additive-model-TSE-1st-order.png', dpi=300, transparent=True)
