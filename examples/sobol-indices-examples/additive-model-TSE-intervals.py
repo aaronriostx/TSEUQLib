@@ -27,7 +27,6 @@ methods = {
     "taylor_model": "Taylor model (1st order)",
 }
 SURFACE = "#fcfcfb"
-INK = "#0b0b0b"
 color_S1 = "#378ADD"
 color_S2 = "#1D9E75"
 
@@ -43,21 +42,16 @@ def plot_one(title, S1_bounds, S2_bounds, filename):
         2, 1, figsize=(4.5, 4.5), gridspec_kw={"height_ratios": [4, 1.4]}
     )
 
-    # ---- pie chart: midpoint split only, percentages inside the wedges ----
-    _, _, autotexts = ax_pie.pie(
+    # ---- pie chart: midpoint split, no percentage labels (ax.pie() silently
+    # renormalizes wedges to sum to 100%, which would misrepresent S1_mid/S2_mid
+    # now that they no longer sum to 1 for every method) ----
+    ax_pie.pie(
         [S1_mid_pct, S2_mid_pct],
-        labeldistance=1.12,
-        autopct="%1.1f%%",
-        pctdistance=0.6,
         colors=[color_S1, color_S2],
         startangle=90,
         counterclock=True,
         wedgeprops={"edgecolor": SURFACE, "linewidth": 2},
-        textprops={"color": INK},
     )
-    for t in autotexts:
-        t.set_color("black")
-        t.set_fontweight("bold")
     # ax_pie.set_title(title, fontsize=11)
 
     # ---- error bar chart: range of S1 and S2 (horizontal) ----
