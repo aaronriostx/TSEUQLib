@@ -13,11 +13,12 @@ k   = fp.sample("normal", num_of_samples, {"mean": MEAN[0], "std": STD[0]}, seed
 Cp  = fp.sample("normal", num_of_samples, {"mean": MEAN[1], "std": STD[1]}, seed=SEED+1)
 rho = fp.sample("normal", num_of_samples, {"mean": MEAN[2], "std": STD[2]}, seed=SEED+2)
 
-# Stochastic parameters with epistemic COV
+# Stochastic parameter with epistemic COV (interval): STD_hU is an interval,
+# so hU has no single flat sample array here -- an outer loop must pick a
+# value from STD_hU before hU can be sampled (see double_loop_MCS_generate_data.py).
 MEAN_hU = 0.114
-COV_hU = np.array([0.9, 0.11])
+COV_hU = np.array([0.09, 0.11])
 STD_hU  = COV_hU * MEAN_hU
-hU  = fp.sample("normal", num_of_samples, {"mean": MEAN_hU, "std": STD_hU}, seed=SEED+3)
 
 # Epistemic parameters (intervals [lower, upper])
 Tinf = (282.7, 283.3)
