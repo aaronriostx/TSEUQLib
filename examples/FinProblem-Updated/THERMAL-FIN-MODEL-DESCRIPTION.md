@@ -188,3 +188,81 @@ $$
 $$
 
 The remainder $R$ is zero for a model that is exactly linear in the epistemic parameters; a non-zero $R$ indicates nonlinearity not captured by the 1st-order expansion.
+
+## 2nd-order TSE for aleatory uncertainty (`TSE_2nd_order.py`)
+
+This script builds a 2nd-order Taylor expansion of $T(\mathbf{X}, \mathbf{y})$ about the nominal point $(\boldsymbol{\mu}_X, \mathbf{m}_y)$, with the epistemic parameters $\mathbf{y} = [T_\infty, T_W, b]$ **fixed** at their midpoints $\mathbf{m}_y$ and only the stochastic parameters $\mathbf{X} = [k, C_p, \rho, h_U]$ treated as random:
+
+$$
+T(\mathbf{X}, \mathbf{m}_y) \approx T_0 + \sum_i f_i\, \delta X_i + \frac{1}{2}\sum_i \sum_j H_{ij}\, \delta X_i\, \delta X_j
+$$
+
+where $T_0 = T(\boldsymbol{\mu}_X, \mathbf{m}_y)$, $\delta X_i = X_i - \mu_{X_i}$, and $f_i = \partial T/\partial X_i$, $H_{ij} = \partial^2 T/\partial X_i \partial X_j$ are the gradient and Hessian evaluated at the nominal point via central finite differences (relative step $h_i = 10^{-3}\mu_{X_i}$; 33 model evaluations total for 4 variables).
+
+### Expectation
+
+Assuming $X_i$ are independent with $\mathbb{E}[\delta X_i] = 0$, $\mathrm{Var}[\delta X_i] = \sigma_i^2$, the linear term vanishes in expectation and only the diagonal curvature survives (off-diagonal terms vanish since $\mathbb{E}[\delta X_i \delta X_j] = 0$ for $i \neq j$):
+
+$$
+\mathbb{E}[T] \approx T_0 + \frac{1}{2}\sum_i H_{ii}\, \sigma_i^2
+$$
+
+### Variance
+
+Writing $T - \mathbb{E}[T] = \underbrace{\sum_i f_i\, \delta X_i}_{L} + \underbrace{\left(\frac{1}{2}\sum_{i,j} H_{ij}\, \delta X_i \delta X_j - \frac{1}{2}\sum_i H_{ii}\sigma_i^2\right)}_{Q - \mathbb{E}[Q]}$, and using that odd central moments of a symmetric distribution (e.g. normal) vanish under independence — which makes $\mathrm{Cov}(L, Q) = 0$ — gives:
+
+$$
+\mathrm{Var}[T] \approx \underbrace{\sum_i f_i^2\, \sigma_i^2}_{\text{1st-order (delta method)}} + \underbrace{\frac{1}{2}\sum_i \sum_j H_{ij}^2\, \sigma_i^2 \sigma_j^2}_{\text{2nd-order correction}}
+$$
+
+The 2nd-order correction is the additional variance contributed by curvature that a 1st-order (linear) expansion misses entirely. The script cross-checks both formulas against a fresh 20,000-sample Monte Carlo draw at the same nominal point; $\mathbb{E}[T]$ matches to within noise, while $\mathrm{Var}[T]$ runs a few percent low at steady state, since 3rd-order-and-higher curvature is still truncated.
+
+## 2nd-order TSE with interval-propagated epistemic bounds (`TSE_2nd_order_bounds.py`)
+
+The script above fixes $\mathbf{y}$ at its midpoint, discarding the epistemic interval information entirely. Re-deriving the aleatory expansion at many sampled points across the epistemic box and numerically taking the min/max (an earlier, superseded version of this script) is cheaper than brute-force Monte Carlo, but it is still a *sampling* procedure — it does not give a closed-form bound and can miss the true extremum between grid points. The corrected approach builds **one** combined 2nd-order expansion in $(\mathbf{X}, \mathbf{y})$ together, then propagates the epistemic uncertainty through that single expansion algebraically.
+
+### Combined expansion
+
+About $(\boldsymbol{\mu}_X, \mathbf{m}_y)$, with $\delta X_i = X_i - \mu_{X_i}$ (aleatory) and $\delta y_j = y_j - m_{y_j}$ (epistemic):
+
+$$
+T \approx T_0 + \sum_i f_i \delta X_i + \sum_j g_j \delta y_j + \frac{1}{2}\sum_{i,i'} H_{ii'}\, \delta X_i \delta X_{i'} + \sum_{i,j} C_{ij}\, \delta X_i \delta y_j + \frac{1}{2}\sum_{j,j'} G_{jj'}\, \delta y_j \delta y_{j'}
+$$
+
+where $g_j = \partial T/\partial y_j$, $G_{jj'} = \partial^2 T/\partial y_j \partial y_{j'}$ (epistemic gradient/Hessian) and $C_{ij} = \partial^2 T/\partial X_i \partial y_j$ (mixed Hessian) are new terms not needed above. All derivatives are evaluated **once**, via central finite differences on the combined 7-variable vector $(\mathbf{X}, \mathbf{y})$ — 99 evaluations total ($1 + 2(7) + 4\binom{7}{2}$) — with no re-evaluation of the physics model afterward.
+
+### Conditional expectation and variance
+
+Taking $\mathbb{E}_{\mathbf{X}}[\cdot]$ over the aleatory randomness only, and leaving $\delta y_j$ symbolic (the cross term $\sum_{i,j} C_{ij}\delta X_i \delta y_j$ vanishes in expectation since it is linear in $\delta X_i$):
+
+$$
+\mathbb{E}_{\mathbf{X}}[T](\boldsymbol{\delta y}) = \underbrace{\left[T_0 + \frac{1}{2}\sum_i H_{ii}\sigma_i^2\right]}_{\text{constant}} + \sum_j g_j \delta y_j + \frac{1}{2}\sum_{j,j'} G_{jj'}\, \delta y_j \delta y_{j'}
+$$
+
+Following the same variance derivation as above, but now the effective linear coefficient on $\delta X_i$ picks up a $\boldsymbol{\delta y}$-dependent correction from the mixed Hessian:
+
+$$
+\mathrm{Var}_{\mathbf{X}}[T](\boldsymbol{\delta y}) = \sum_i \left[f_i + \sum_j C_{ij}\, \delta y_j\right]^2 \sigma_i^2 \;+\; \frac{1}{2}\sum_{i,i'} H_{ii'}^2\, \sigma_i^2 \sigma_{i'}^2
+$$
+
+Both expressions are now closed-form polynomials **purely in the epistemic deviations** $\boldsymbol{\delta y}$ — the expensive physics model no longer appears past the one-time derivative computation above.
+
+### The $h_U$ standard deviation as an epistemic interval
+
+$h_U$'s standard deviation, $\sigma_{h_U}$, is itself only known to lie in an interval $[\underline{\sigma}_{h_U}, \overline{\sigma}_{h_U}]$ (`STD_hU` in `fin_params_mixed.py`). It never appears as an argument to $T$, so it needs no derivative — it enters the formulas above algebraically, wherever $\sigma_i^2$ is indexed at $i = h_U$, as the interval $\sigma_{h_U}^2 \in [\underline{\sigma}_{h_U}^2, \overline{\sigma}_{h_U}^2]$.
+
+### Interval-arithmetic propagation
+
+Each epistemic deviation is bounded by a centered interval of half-width $\Delta y_j = (\overline{y}_j - \underline{y}_j)/2$: $\delta y_j \in [-\Delta y_j, +\Delta y_j]$. The `Interval` class in the script implements:
+
+- **Addition**: $[\underline{a},\overline{a}] + [\underline{b},\overline{b}] = [\underline{a}+\underline{b},\, \overline{a}+\overline{b}]$ — exact.
+- **Multiplication**: $[\underline{a},\overline{a}] \cdot [\underline{b},\overline{b}] = [\min(\underline{a}\underline{b},\underline{a}\overline{b},\overline{a}\underline{b},\overline{a}\overline{b}),\, \max(\cdots)]$ — exact for **independent** intervals, but naively squaring an interval against itself this way overestimates the true range (e.g. $[-a,a]\cdot[-a,a]$ naively gives $[-a^2,a^2]$, when the true range of $x^2$ for $x\in[-a,a]$ is $[0,a^2]$). This is the classic interval-arithmetic **dependency problem**: a variable that appears more than once in an expression is treated as if each occurrence were independent.
+- **Square**: a dedicated operator computing the tight range of $x^2$ over $[\underline{a},\overline{a}]$ (accounting for whether $0$ lies inside the interval), used for every $\delta y_j^2$ and for the squared bracket $\left[f_i + \sum_j C_{ij}\delta y_j\right]^2$ in the variance formula. Because the bracket itself is an *affine* (linear) function of independent intervals, its range from ordinary interval addition/scaling is already exact, so squaring it with the dedicated operator gives the exact range of the squared bracket too.
+
+Substituting $\delta y_j$, and $\sigma_{h_U}^2$ where relevant, as intervals into the two boxed expressions above and evaluating with this arithmetic gives lower/upper bounds on $\mathbb{E}[T(0,\tau)]$ and $\mathrm{Var}[T(0,\tau)]$ at every time step, with no sweep over the epistemic space.
+
+### Caveat: bounds are conservative, not necessarily tight
+
+Interval arithmetic is exact for a *single* affine combination of independent intervals (including a bracket squared, as noted above), but **summing several such individually-exact terms that share a common $\delta y_j$** (e.g. two different bracket-squared terms both involving $\delta T_\infty$) can still overestimate the true joint range, because each term's own extremum may not occur at the same point in the epistemic box. This is the interval-arithmetic **wrapping effect**, and it means the resulting $[\underline{T},\overline{T}]$ is a valid but possibly loose outer enclosure of the 2nd-order polynomial's true range — not a certified tight bound. Affine arithmetic (propagating a shared symbolic noise variable per $\delta y_j$, as in `TSE_mixed_models.py`, so correlated terms cancel correctly on summation) or Taylor models would tighten this further.
+
+Separately, and independently of the propagation method: any gap between these bounds and a brute-force Monte Carlo sweep of the epistemic grid (`double_loop_MCS_data.npz`) reflects **2nd-order truncation error** in the underlying polynomial (most visibly in $\mathrm{Var}[T]$, which depends on curvature the expansion doesn't fully capture) — not a flaw in the interval arithmetic itself.

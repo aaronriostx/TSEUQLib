@@ -5,7 +5,7 @@ from fin_params_mixed import (
 )
 
 # ── Loop sizes ─────────────────────────────────────────────────────────────
-M_grid = 3        # outer (epistemic) grid points per variable
+M_grid = 4        # outer (epistemic) grid points per variable
 N_inner = 1000     # inner (aleatory) samples per outer point
 
 # ── Outer loop: epistemic grid over Tinf, Tw, b, STD_hU ─────────────────────

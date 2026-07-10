@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>thermal-fin-model-description</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="THERMAL-FIN-MODEL-DESCRIPTION_files/libs/clipboard/clipboard.min.js"></script>
+<script src="THERMAL-FIN-MODEL-DESCRIPTION_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="THERMAL-FIN-MODEL-DESCRIPTION_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="THERMAL-FIN-MODEL-DESCRIPTION_files/libs/quarto-html/popper.min.js"></script>
+<script src="THERMAL-FIN-MODEL-DESCRIPTION_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="THERMAL-FIN-MODEL-DESCRIPTION_files/libs/quarto-html/anchor.min.js"></script>
+<link href="THERMAL-FIN-MODEL-DESCRIPTION_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="THERMAL-FIN-MODEL-DESCRIPTION_files/libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="THERMAL-FIN-MODEL-DESCRIPTION_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="THERMAL-FIN-MODEL-DESCRIPTION_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="THERMAL-FIN-MODEL-DESCRIPTION_files/libs/bootstrap/bootstrap-138a6193a3bd40baf1e627da441a4734.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="transient-thermal-fin-problem" class="level1">
+<h1>Transient thermal fin problem</h1>
+<p>A 1D thermal fin problem is presented in this subdirectory. The non-dimensionalized temperature response, <span class="math inline">\(\theta(X, \tau)\)</span> is defined as</p>
+<p><span class="math display">\[
+\theta(X, \tau) = \frac{T(X, \tau) - T_{\infty}}{T_{W} - T_{\infty}} = \theta(X, \tau)_{SS} + \theta(X, \tau)_{\tau}
+\]</span></p>
+<p>where <span class="math inline">\(X\)</span> is the normalized distance along the thermal fin and <span class="math inline">\(\tau\)</span> is the time constant. <span class="math inline">\(\theta(X, \tau)_{SS}\)</span> is the steady-state thermal response and <span class="math inline">\(\theta(X, \tau)_{\tau}\)</span> is the transient thermal response. <span class="math inline">\(T(X, \tau)\)</span> is the full temperature response and <span class="math inline">\(T_{W}\)</span> and <span class="math inline">\(T_{\infty}\)</span> are the temperature at the wall and environment temperature, respectively.</p>
+<p><span class="math inline">\(X\)</span> is defined as</p>
+<p><span class="math display">\[
+X = x/b
+\]</span></p>
+<p>where <span class="math inline">\(x\)</span> is the distance from the insulated fin tip <span class="math inline">\((x=0)\)</span> and <span class="math inline">\(b\)</span> is the total fin length. The time constant, <span class="math inline">\(\tau\)</span> is defined as</p>
+<p><span class="math display">\[
+\tau = \frac{tk}{b^{2} \rho C_{p}}
+\]</span></p>
+<p>where <span class="math inline">\(t\)</span> is time, <span class="math inline">\(k\)</span> is thermal conductivity, <span class="math inline">\(\rho\)</span> is density and <span class="math inline">\(C_{p}\)</span> is specific heat.</p>
+<p>The steady-state thermal response is calculated as</p>
+<p><span class="math display">\[
+\theta(X, \tau)_{SS} = \frac{\cosh \left(\omega X\right)}{\cosh \left(\omega\right)}
+\]</span></p>
+<p>where <span class="math inline">\(\omega^{2}\)</span> depends on convection coefficient, <span class="math inline">\(h_{U}\)</span>, fin thickness, <span class="math inline">\(\delta\)</span> and fin width, <span class="math inline">\(L\)</span>, shown below.</p>
+<p><span class="math display">\[
+\omega^{2} = \frac{2h_{U}b^{2}}{k \delta L}
+\]</span></p>
+<p>or</p>
+<p><span class="math display">\[
+\omega = \sqrt{\frac{2h_{U}b^{2}}{k \delta L}}
+\]</span></p>
+<p>The transient thermal response is calculated as a truncated series shown below</p>
+<p><span class="math display">\[
+\theta(X, \tau)_{\tau} = 2 \sum_{j = 1}^{\infty} \left(- 1\right)^{j + 1} \left(\frac{\theta_{0}}{\lambda_{j}} - \frac{\lambda_{j}}{\omega^{2} + \lambda_{j}^{2}}\right) \text{cos} \left(\lambda_{j} X\right) e^{- \left(\omega^{2} + \lambda_{j}^{2}\right) \tau}
+\]</span></p>
+<p><span class="math inline">\(\lambda_{j}\)</span> terms are calculated simply as:</p>
+<p><span class="math display">\[
+\lambda_{j} = \pi(2j-1)/2
+\]</span></p>
+<p>The series is truncated to <span class="math inline">\(j=100\)</span>. <span class="math inline">\(j\)</span> is simply an index defined as <span class="math inline">\(j=1,2,3,...,100\)</span>. The initial non-dimensionalized temperature, <span class="math inline">\(\theta_{0}\)</span>, is</p>
+<p><span class="math display">\[
+\theta_{0} = \frac{T_{0} - T_{\infty}}{T_{W} - T_{\infty}}
+\]</span></p>
+<p>where <span class="math inline">\(T_{0}\)</span> is the initial temperature of the fin at <span class="math inline">\(t=0\)</span>. For this model, it is assumed that <span class="math inline">\(T_{0} = T_{\infty}\)</span>.</p>
+<section id="model-parameter-definitions" class="level2">
+<h2 class="anchored" data-anchor-id="model-parameter-definitions">Model parameter definitions</h2>
+<p>In the <code>fin_params.py</code> file, the parameters of this model are defined. In this model, we are interested in the thermal response at the insulated fin tip through time, i.e., <span class="math inline">\(T(X=0, \tau)\)</span>. Fin width and thickness are fixed constants (<span class="math inline">\(\delta=4.75 \times 10^{-3} \thinspace \text{m}, \thinspace L = 100 \times 10^{-3} \thinspace \text{m}\)</span>). All other model parameters are either defined as random or epistemic variables.</p>
+</section>
+<section id="quantities-of-interest-qois" class="level2">
+<h2 class="anchored" data-anchor-id="quantities-of-interest-qois">Quantities-of-interest (QOIs)</h2>
+<p>In particular, we are interested in computing the expectation of the insulated fin tip thermal response, <span class="math inline">\(\mathbb{E}[T(0, \tau)]\)</span> as well as central moments (variance, skewness, kurtosis).</p>
+<p><span class="math display">\[
+\mu_{n}[T(0, \tau)]=\mathbb{E}\bigg[ \big( T(0, \tau) - \mathbb{E}[(T(0, \tau)] \big)^{n} \bigg]
+\]</span></p>
+<p>Ideally, we want to plot expectation and central moments through time using different UQ methods.</p>
+</section>
+<section id="st-order-tse-for-mixed-stochastic-epistemic-uncertainty-tse_mixed.py" class="level2">
+<h2 class="anchored" data-anchor-id="st-order-tse-for-mixed-stochastic-epistemic-uncertainty-tse_mixed.py">1st-order TSE for mixed stochastic-epistemic uncertainty (<code>TSE_mixed.py</code>)</h2>
+<p>In the mixed uncertainty case, model parameters are partitioned into two sets:</p>
+<ul>
+<li><strong>Stochastic parameters</strong> <span class="math inline">\(\mathbf{X} = [k,\, C_p,\, \rho,\, h_U]\)</span>, treated as random variables with known normal distributions and means <span class="math inline">\(\boldsymbol{\mu}_X\)</span>.</li>
+<li><strong>Epistemic parameters</strong> <span class="math inline">\(\mathbf{y} = [T_\infty,\, T_W,\, b,\, T_0]\)</span>, known only to lie within intervals <span class="math inline">\([\underline{y}_i,\, \overline{y}_i]\)</span>. Since <span class="math inline">\(T_0 = T_\infty\)</span> by assumption, <span class="math inline">\(T_0\)</span> is coupled to <span class="math inline">\(T_\infty\)</span> and is not an independent variable.</li>
+</ul>
+<section id="nominal-point" class="level3">
+<h3 class="anchored" data-anchor-id="nominal-point">Nominal point</h3>
+<p>The expansion is performed about the nominal point <span class="math inline">\((\boldsymbol{\mu}_X, \mathbf{m}_y)\)</span>, where <span class="math inline">\(\mathbf{m}_y\)</span> is the vector of interval midpoints:</p>
+<p><span class="math display">\[
+m_{y_i} = \frac{\underline{y}_i + \overline{y}_i}{2}
+\]</span></p>
+</section>
+<section id="st-order-taylor-series-expansion-of-mathbbet" class="level3">
+<h3 class="anchored" data-anchor-id="st-order-taylor-series-expansion-of-mathbbet">1st-order Taylor series expansion of <span class="math inline">\(\mathbb{E}[T]\)</span></h3>
+<p>Expanding <span class="math inline">\(T(\mathbf{X}, \mathbf{y})\)</span> to first order about the nominal point:</p>
+<p><span class="math display">\[
+T(\mathbf{X}, \mathbf{y}) \approx T(\boldsymbol{\mu}_X, \mathbf{m}_y) + \nabla_{\mathbf{X}} T\big|_{\text{nom}} \cdot (\mathbf{X} - \boldsymbol{\mu}_X) + \nabla_{\mathbf{y}} T\big|_{\text{nom}} \cdot (\mathbf{y} - \mathbf{m}_y)
+\]</span></p>
+<p>Taking the expectation over <span class="math inline">\(\mathbf{X}\)</span> (with <span class="math inline">\(\mathbf{y}\)</span> fixed), the stochastic correction terms vanish since <span class="math inline">\(\mathbb{E}[\mathbf{X} - \boldsymbol{\mu}_X] = \mathbf{0}\)</span>:</p>
+<p><span class="math display">\[
+\mathbb{E}_{\mathbf{X}}\left[T(\mathbf{X}, \mathbf{y})\right] \approx T(\boldsymbol{\mu}_X, \mathbf{m}_y) + \sum_{i} \frac{\partial T}{\partial y_i}\bigg|_{\text{nom}} (y_i - m_{y_i})
+\]</span></p>
+</section>
+<section id="interval-arithmetic-for-epistemic-bounds" class="level3">
+<h3 class="anchored" data-anchor-id="interval-arithmetic-for-epistemic-bounds">Interval arithmetic for epistemic bounds</h3>
+<p>Each epistemic deviation <span class="math inline">\(y_i - m_{y_i}\)</span> is bounded by a centered interval of half-width (radius) <span class="math inline">\(\Delta y_i\)</span>:</p>
+<p><span class="math display">\[
+\delta y_i = y_i - m_{y_i} \;\in\; [-\Delta y_i,\; +\Delta y_i], \qquad \Delta y_i = \frac{\overline{y}_i - \underline{y}_i}{2}
+\]</span></p>
+<p>Multiplying each centered interval by its partial derivative and summing using interval arithmetic:</p>
+<p><span class="math display">\[
+\sum_{i} \frac{\partial T}{\partial y_i}\bigg|_{\text{nom}} \cdot [-\Delta y_i,\, +\Delta y_i] = \left[-\sum_{i} \left|\frac{\partial T}{\partial y_i}\bigg|_{\text{nom}}\right| \Delta y_i,\;\; +\sum_{i} \left|\frac{\partial T}{\partial y_i}\bigg|_{\text{nom}}\right| \Delta y_i \right]
+\]</span></p>
+<p>This yields lower and upper bounds on <span class="math inline">\(\mathbb{E}[T(0, \tau)]\)</span> at each time step:</p>
+<p><span class="math display">\[
+\mathbb{E}[T(0, \tau)] \in T(\boldsymbol{\mu}_X, \mathbf{m}_y)\big|_\tau \;\pm\; \sum_{i} \left|\frac{\partial T}{\partial y_i}\bigg|_{\text{nom}}\right| \Delta y_i
+\]</span></p>
+<p>The partial derivatives <span class="math inline">\(\partial T / \partial y_i\)</span> are functions of time and are evaluated numerically via numerical differentiation at the nominal point.</p>
+</section>
+</section>
+<section id="quantifying-epistemic-contributions-via-affine-and-taylor-models-tse_mixed_models.py" class="level2">
+<h2 class="anchored" data-anchor-id="quantifying-epistemic-contributions-via-affine-and-taylor-models-tse_mixed_models.py">Quantifying epistemic contributions via affine and Taylor models (<code>TSE_mixed_models.py</code>)</h2>
+<p>Standard interval arithmetic collapses the result to a single bound <span class="math inline">\([\underline{T}, \overline{T}]\)</span>, discarding information about which uncertainty source drove that width. Affine arithmetic and Taylor models retain symbolic noise variables that carry each source through the calculation.</p>
+<section id="affine-model" class="level3">
+<h3 class="anchored" data-anchor-id="affine-model">Affine model</h3>
+<p>Each centered epistemic deviation <span class="math inline">\(\delta y_i \in [-\Delta y_i, +\Delta y_i]\)</span> is associated with an independent symbolic noise variable <span class="math inline">\(\varepsilon_i \in [-1, +1]\)</span>:</p>
+<p><span class="math display">\[
+\delta y_i = \Delta y_i \cdot \varepsilon_i
+\]</span></p>
+<p>Substituting into the 1st-order TSE gives the <strong>affine form</strong> of <span class="math inline">\(\mathbb{E}[T]\)</span>:</p>
+<p><span class="math display">\[
+\hat{\mathbb{E}}[T(\tau)] = T_0(\tau) + \underbrace{\frac{\partial T}{\partial T_\infty}\bigg|_{\text{nom}} \Delta T_\infty}_{c_1(\tau)} \varepsilon_1 + \underbrace{\frac{\partial T}{\partial T_W}\bigg|_{\text{nom}} \Delta T_W}_{c_2(\tau)} \varepsilon_2 + \underbrace{\frac{\partial T}{\partial b}\bigg|_{\text{nom}} \Delta b}_{c_3(\tau)} \varepsilon_3
+\]</span></p>
+<p>where <span class="math inline">\(T_0(\tau) = T(\boldsymbol{\mu}_X, \mathbf{m}_y)\big|_\tau\)</span> is the nominal temperature history. The coefficients <span class="math inline">\(c_i(\tau)\)</span> are time-varying and encode the sensitivity of <span class="math inline">\(\mathbb{E}[T]\)</span> to each source scaled by its half-width.</p>
+<p>Converting the affine form to a standard interval recovers the same bound as before, since <span class="math inline">\(\varepsilon_i \in [-1,+1]\)</span>:</p>
+<p><span class="math display">\[
+\mathbb{E}[T(\tau)] \in \left[T_0(\tau) - \sum_i |c_i(\tau)|,\;\; T_0(\tau) + \sum_i |c_i(\tau)|\right]
+\]</span></p>
+<p>The key advantage is that each <span class="math inline">\(|c_i(\tau)|\)</span> is the individual half-width contribution of source <span class="math inline">\(i\)</span>, making it possible to rank sources at any time step.</p>
+</section>
+<section id="fractional-contribution" class="level3">
+<h3 class="anchored" data-anchor-id="fractional-contribution">Fractional contribution</h3>
+<p>The fractional contribution of each source at time <span class="math inline">\(\tau\)</span> is:</p>
+<p><span class="math display">\[
+S_i(\tau) = \frac{|c_i(\tau)|}{\displaystyle\sum_j |c_j(\tau)|}
+\]</span></p>
+<p>with <span class="math inline">\(\sum_i S_i(\tau) = 1\)</span>. Plotting <span class="math inline">\(S_i(\tau)\)</span> over time reveals how dominance shifts between sources as the fin evolves from transient to steady state.</p>
+</section>
+<section id="taylor-model" class="level3">
+<h3 class="anchored" data-anchor-id="taylor-model">Taylor model</h3>
+<p>A <strong>Taylor model</strong> of order <span class="math inline">\(p\)</span> is a pair <span class="math inline">\((p(\boldsymbol{\varepsilon}),\, R)\)</span> where <span class="math inline">\(p\)</span> is a multivariate polynomial in the noise variables and <span class="math inline">\(R\)</span> is an interval that rigorously bounds the remainder from truncating the Taylor series:</p>
+<p><span class="math display">\[
+\mathbb{E}[T(\tau)] \in p(\boldsymbol{\varepsilon})\big|_{\boldsymbol{\varepsilon}\in[-1,1]^n} + R(\tau)
+\]</span></p>
+<p>For the 1st-order expansion, the polynomial part is the affine form above and the remainder captures 2nd-order and higher contributions:</p>
+<p><span class="math display">\[
+R(\tau) = \left[\min_{\boldsymbol{s} \in \{-1,+1\}^n} r(\boldsymbol{s},\tau),\;\; \max_{\boldsymbol{s} \in \{-1,+1\}^n} r(\boldsymbol{s},\tau)\right]
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[
+r(\boldsymbol{s},\tau) = T\!\left(\boldsymbol{\mu}_X,\, \mathbf{m}_y + \boldsymbol{s} \odot \boldsymbol{\Delta y}\right)\bigg|_\tau - \left(T_0(\tau) + \sum_i s_i\, c_i(\tau)\right)
+\]</span></p>
+<p>is the pointwise approximation error evaluated at each of the <span class="math inline">\(2^n\)</span> corners of the epistemic box. The Taylor model enclosure is then:</p>
+<p><span class="math display">\[
+\mathbb{E}[T(\tau)] \in \left[T_0(\tau) - \sum_i |c_i(\tau)| + \underline{R}(\tau),\;\; T_0(\tau) + \sum_i |c_i(\tau)| + \overline{R}(\tau)\right]
+\]</span></p>
+<p>The remainder <span class="math inline">\(R\)</span> is zero for a model that is exactly linear in the epistemic parameters; a non-zero <span class="math inline">\(R\)</span> indicates nonlinearity not captured by the 1st-order expansion.</p>
+</section>
+</section>
+<section id="nd-order-tse-for-aleatory-uncertainty-tse_2nd_order.py" class="level2">
+<h2 class="anchored" data-anchor-id="nd-order-tse-for-aleatory-uncertainty-tse_2nd_order.py">2nd-order TSE for aleatory uncertainty (<code>TSE_2nd_order.py</code>)</h2>
+<p>This script builds a 2nd-order Taylor expansion of <span class="math inline">\(T(\mathbf{X}, \mathbf{y})\)</span> about the nominal point <span class="math inline">\((\boldsymbol{\mu}_X, \mathbf{m}_y)\)</span>, with the epistemic parameters <span class="math inline">\(\mathbf{y} = [T_\infty, T_W, b]\)</span> <strong>fixed</strong> at their midpoints <span class="math inline">\(\mathbf{m}_y\)</span> and only the stochastic parameters <span class="math inline">\(\mathbf{X} = [k, C_p, \rho, h_U]\)</span> treated as random:</p>
+<p><span class="math display">\[
+T(\mathbf{X}, \mathbf{m}_y) \approx T_0 + \sum_i f_i\, \delta X_i + \frac{1}{2}\sum_i \sum_j H_{ij}\, \delta X_i\, \delta X_j
+\]</span></p>
+<p>where <span class="math inline">\(T_0 = T(\boldsymbol{\mu}_X, \mathbf{m}_y)\)</span>, <span class="math inline">\(\delta X_i = X_i - \mu_{X_i}\)</span>, and <span class="math inline">\(f_i = \partial T/\partial X_i\)</span>, <span class="math inline">\(H_{ij} = \partial^2 T/\partial X_i \partial X_j\)</span> are the gradient and Hessian evaluated at the nominal point via central finite differences (relative step <span class="math inline">\(h_i = 10^{-3}\mu_{X_i}\)</span>; 33 model evaluations total for 4 variables).</p>
+<section id="expectation" class="level3">
+<h3 class="anchored" data-anchor-id="expectation">Expectation</h3>
+<p>Assuming <span class="math inline">\(X_i\)</span> are independent with <span class="math inline">\(\mathbb{E}[\delta X_i] = 0\)</span>, <span class="math inline">\(\mathrm{Var}[\delta X_i] = \sigma_i^2\)</span>, the linear term vanishes in expectation and only the diagonal curvature survives (off-diagonal terms vanish since <span class="math inline">\(\mathbb{E}[\delta X_i \delta X_j] = 0\)</span> for <span class="math inline">\(i \neq j\)</span>):</p>
+<p><span class="math display">\[
+\mathbb{E}[T] \approx T_0 + \frac{1}{2}\sum_i H_{ii}\, \sigma_i^2
+\]</span></p>
+</section>
+<section id="variance" class="level3">
+<h3 class="anchored" data-anchor-id="variance">Variance</h3>
+<p>Writing <span class="math inline">\(T - \mathbb{E}[T] = \underbrace{\sum_i f_i\, \delta X_i}_{L} + \underbrace{\left(\frac{1}{2}\sum_{i,j} H_{ij}\, \delta X_i \delta X_j - \frac{1}{2}\sum_i H_{ii}\sigma_i^2\right)}_{Q - \mathbb{E}[Q]}\)</span>, and using that odd central moments of a symmetric distribution (e.g.&nbsp;normal) vanish under independence — which makes <span class="math inline">\(\mathrm{Cov}(L, Q) = 0\)</span> — gives:</p>
+<p><span class="math display">\[
+\mathrm{Var}[T] \approx \underbrace{\sum_i f_i^2\, \sigma_i^2}_{\text{1st-order (delta method)}} + \underbrace{\frac{1}{2}\sum_i \sum_j H_{ij}^2\, \sigma_i^2 \sigma_j^2}_{\text{2nd-order correction}}
+\]</span></p>
+<p>The 2nd-order correction is the additional variance contributed by curvature that a 1st-order (linear) expansion misses entirely. The script cross-checks both formulas against a fresh 20,000-sample Monte Carlo draw at the same nominal point; <span class="math inline">\(\mathbb{E}[T]\)</span> matches to within noise, while <span class="math inline">\(\mathrm{Var}[T]\)</span> runs a few percent low at steady state, since 3rd-order-and-higher curvature is still truncated.</p>
+</section>
+</section>
+<section id="nd-order-tse-with-interval-propagated-epistemic-bounds-tse_2nd_order_bounds.py" class="level2">
+<h2 class="anchored" data-anchor-id="nd-order-tse-with-interval-propagated-epistemic-bounds-tse_2nd_order_bounds.py">2nd-order TSE with interval-propagated epistemic bounds (<code>TSE_2nd_order_bounds.py</code>)</h2>
+<p>The script above fixes <span class="math inline">\(\mathbf{y}\)</span> at its midpoint, discarding the epistemic interval information entirely. Re-deriving the aleatory expansion at many sampled points across the epistemic box and numerically taking the min/max (an earlier, superseded version of this script) is cheaper than brute-force Monte Carlo, but it is still a <em>sampling</em> procedure — it does not give a closed-form bound and can miss the true extremum between grid points. The corrected approach builds <strong>one</strong> combined 2nd-order expansion in <span class="math inline">\((\mathbf{X}, \mathbf{y})\)</span> together, then propagates the epistemic uncertainty through that single expansion algebraically.</p>
+<section id="combined-expansion" class="level3">
+<h3 class="anchored" data-anchor-id="combined-expansion">Combined expansion</h3>
+<p>About <span class="math inline">\((\boldsymbol{\mu}_X, \mathbf{m}_y)\)</span>, with <span class="math inline">\(\delta X_i = X_i - \mu_{X_i}\)</span> (aleatory) and <span class="math inline">\(\delta y_j = y_j - m_{y_j}\)</span> (epistemic):</p>
+<p><span class="math display">\[
+T \approx T_0 + \sum_i f_i \delta X_i + \sum_j g_j \delta y_j + \frac{1}{2}\sum_{i,i'} H_{ii'}\, \delta X_i \delta X_{i'} + \sum_{i,j} C_{ij}\, \delta X_i \delta y_j + \frac{1}{2}\sum_{j,j'} G_{jj'}\, \delta y_j \delta y_{j'}
+\]</span></p>
+<p>where <span class="math inline">\(g_j = \partial T/\partial y_j\)</span>, <span class="math inline">\(G_{jj'} = \partial^2 T/\partial y_j \partial y_{j'}\)</span> (epistemic gradient/Hessian) and <span class="math inline">\(C_{ij} = \partial^2 T/\partial X_i \partial y_j\)</span> (mixed Hessian) are new terms not needed above. All derivatives are evaluated <strong>once</strong>, via central finite differences on the combined 7-variable vector <span class="math inline">\((\mathbf{X}, \mathbf{y})\)</span> — 99 evaluations total (<span class="math inline">\(1 + 2(7) + 4\binom{7}{2}\)</span>) — with no re-evaluation of the physics model afterward.</p>
+</section>
+<section id="conditional-expectation-and-variance" class="level3">
+<h3 class="anchored" data-anchor-id="conditional-expectation-and-variance">Conditional expectation and variance</h3>
+<p>Taking <span class="math inline">\(\mathbb{E}_{\mathbf{X}}[\cdot]\)</span> over the aleatory randomness only, and leaving <span class="math inline">\(\delta y_j\)</span> symbolic (the cross term <span class="math inline">\(\sum_{i,j} C_{ij}\delta X_i \delta y_j\)</span> vanishes in expectation since it is linear in <span class="math inline">\(\delta X_i\)</span>):</p>
+<p><span class="math display">\[
+\mathbb{E}_{\mathbf{X}}[T](\boldsymbol{\delta y}) = \underbrace{\left[T_0 + \frac{1}{2}\sum_i H_{ii}\sigma_i^2\right]}_{\text{constant}} + \sum_j g_j \delta y_j + \frac{1}{2}\sum_{j,j'} G_{jj'}\, \delta y_j \delta y_{j'}
+\]</span></p>
+<p>Following the same variance derivation as above, but now the effective linear coefficient on <span class="math inline">\(\delta X_i\)</span> picks up a <span class="math inline">\(\boldsymbol{\delta y}\)</span>-dependent correction from the mixed Hessian:</p>
+<p><span class="math display">\[
+\mathrm{Var}_{\mathbf{X}}[T](\boldsymbol{\delta y}) = \sum_i \left[f_i + \sum_j C_{ij}\, \delta y_j\right]^2 \sigma_i^2 \;+\; \frac{1}{2}\sum_{i,i'} H_{ii'}^2\, \sigma_i^2 \sigma_{i'}^2
+\]</span></p>
+<p>Both expressions are now closed-form polynomials <strong>purely in the epistemic deviations</strong> <span class="math inline">\(\boldsymbol{\delta y}\)</span> — the expensive physics model no longer appears past the one-time derivative computation above.</p>
+</section>
+<section id="the-h_u-standard-deviation-as-an-epistemic-interval" class="level3">
+<h3 class="anchored" data-anchor-id="the-h_u-standard-deviation-as-an-epistemic-interval">The <span class="math inline">\(h_U\)</span> standard deviation as an epistemic interval</h3>
+<p><span class="math inline">\(h_U\)</span>’s standard deviation, <span class="math inline">\(\sigma_{h_U}\)</span>, is itself only known to lie in an interval <span class="math inline">\([\underline{\sigma}_{h_U}, \overline{\sigma}_{h_U}]\)</span> (<code>STD_hU</code> in <code>fin_params_mixed.py</code>). It never appears as an argument to <span class="math inline">\(T\)</span>, so it needs no derivative — it enters the formulas above algebraically, wherever <span class="math inline">\(\sigma_i^2\)</span> is indexed at <span class="math inline">\(i = h_U\)</span>, as the interval <span class="math inline">\(\sigma_{h_U}^2 \in [\underline{\sigma}_{h_U}^2, \overline{\sigma}_{h_U}^2]\)</span>.</p>
+</section>
+<section id="interval-arithmetic-propagation" class="level3">
+<h3 class="anchored" data-anchor-id="interval-arithmetic-propagation">Interval-arithmetic propagation</h3>
+<p>Each epistemic deviation is bounded by a centered interval of half-width <span class="math inline">\(\Delta y_j = (\overline{y}_j - \underline{y}_j)/2\)</span>: <span class="math inline">\(\delta y_j \in [-\Delta y_j, +\Delta y_j]\)</span>. The <code>Interval</code> class in the script implements:</p>
+<ul>
+<li><strong>Addition</strong>: <span class="math inline">\([\underline{a},\overline{a}] + [\underline{b},\overline{b}] = [\underline{a}+\underline{b},\, \overline{a}+\overline{b}]\)</span> — exact.</li>
+<li><strong>Multiplication</strong>: <span class="math inline">\([\underline{a},\overline{a}] \cdot [\underline{b},\overline{b}] = [\min(\underline{a}\underline{b},\underline{a}\overline{b},\overline{a}\underline{b},\overline{a}\overline{b}),\, \max(\cdots)]\)</span> — exact for <strong>independent</strong> intervals, but naively squaring an interval against itself this way overestimates the true range (e.g.&nbsp;<span class="math inline">\([-a,a]\cdot[-a,a]\)</span> naively gives <span class="math inline">\([-a^2,a^2]\)</span>, when the true range of <span class="math inline">\(x^2\)</span> for <span class="math inline">\(x\in[-a,a]\)</span> is <span class="math inline">\([0,a^2]\)</span>). This is the classic interval-arithmetic <strong>dependency problem</strong>: a variable that appears more than once in an expression is treated as if each occurrence were independent.</li>
+<li><strong>Square</strong>: a dedicated operator computing the tight range of <span class="math inline">\(x^2\)</span> over <span class="math inline">\([\underline{a},\overline{a}]\)</span> (accounting for whether <span class="math inline">\(0\)</span> lies inside the interval), used for every <span class="math inline">\(\delta y_j^2\)</span> and for the squared bracket <span class="math inline">\(\left[f_i + \sum_j C_{ij}\delta y_j\right]^2\)</span> in the variance formula. Because the bracket itself is an <em>affine</em> (linear) function of independent intervals, its range from ordinary interval addition/scaling is already exact, so squaring it with the dedicated operator gives the exact range of the squared bracket too.</li>
+</ul>
+<p>Substituting <span class="math inline">\(\delta y_j\)</span>, and <span class="math inline">\(\sigma_{h_U}^2\)</span> where relevant, as intervals into the two boxed expressions above and evaluating with this arithmetic gives lower/upper bounds on <span class="math inline">\(\mathbb{E}[T(0,\tau)]\)</span> and <span class="math inline">\(\mathrm{Var}[T(0,\tau)]\)</span> at every time step, with no sweep over the epistemic space.</p>
+</section>
+<section id="caveat-bounds-are-conservative-not-necessarily-tight" class="level3">
+<h3 class="anchored" data-anchor-id="caveat-bounds-are-conservative-not-necessarily-tight">Caveat: bounds are conservative, not necessarily tight</h3>
+<p>Interval arithmetic is exact for a <em>single</em> affine combination of independent intervals (including a bracket squared, as noted above), but <strong>summing several such individually-exact terms that share a common <span class="math inline">\(\delta y_j\)</span></strong> (e.g.&nbsp;two different bracket-squared terms both involving <span class="math inline">\(\delta T_\infty\)</span>) can still overestimate the true joint range, because each term’s own extremum may not occur at the same point in the epistemic box. This is the interval-arithmetic <strong>wrapping effect</strong>, and it means the resulting <span class="math inline">\([\underline{T},\overline{T}]\)</span> is a valid but possibly loose outer enclosure of the 2nd-order polynomial’s true range — not a certified tight bound. Affine arithmetic (propagating a shared symbolic noise variable per <span class="math inline">\(\delta y_j\)</span>, as in <code>TSE_mixed_models.py</code>, so correlated terms cancel correctly on summation) or Taylor models would tighten this further.</p>
+<p>Separately, and independently of the propagation method: any gap between these bounds and a brute-force Monte Carlo sweep of the epistemic grid (<code>double_loop_MCS_data.npz</code>) reflects <strong>2nd-order truncation error</strong> in the underlying polynomial (most visibly in <span class="math inline">\(\mathrm{Var}[T]\)</span>, which depends on curvature the expansion doesn’t fully capture) — not a flaw in the interval arithmetic itself.</p>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
