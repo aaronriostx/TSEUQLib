@@ -62,8 +62,9 @@ def plot_one(method_key, filename):
             fmt="o", color=colors[v], ecolor="black", elinewidth=2, capsize=6,
             markersize=11, markeredgecolor="black", markeredgewidth=1, zorder=3,
         )
-        ax_bar.text(hi + 1.5, yi, f"{hi:.1f}%", va="center", fontsize=8)
-        ax_bar.text(lo - 1.5, yi, f"{lo:.1f}%", va="center", ha="right", fontsize=8)
+        if (hi > 1) and (lo > 1):
+            ax_bar.text(hi + 1.5, yi, f"{hi:.1f}%", va="center", fontsize=16)
+            ax_bar.text(lo - 1.5, yi, f"{lo:.1f}%", va="center", ha="right", fontsize=16)
 
     all_los = [bounds[v][0] * 100 for v in variables]
     all_his = [bounds[v][1] * 100 for v in variables]

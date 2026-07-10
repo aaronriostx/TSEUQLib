@@ -16,10 +16,20 @@ widens the other. See TSE_1st_order_derivation.md for the full derivation.
 
 Bounds are checked against the brute-force double-loop MC sweep in
 double_loop_MCS_data.npz.
+
+Also builds affine-arithmetic (AA) and 1st-order-Taylor-model (TM) bounds on
+the SAME closed-form E[T]/Var[T] expressions above, as a validation check --
+E[T] and Var[T] here are already exactly affine in (Tinf, Tw, b, sigma_hU^2)
+(each appears once, linearly, no cross/squared terms -- that only happens in
+the 2nd-order TSE), so AA and TM are mathematically guaranteed to reproduce
+the IA bounds exactly rather than tighten them. The point of building them
+here is to confirm that agreement numerically/symbolically, not to improve
+on IA.
 """
 import os
 import time
 import numpy as np
+import sympy as sp
 import matplotlib.pyplot as plt
 import fin_problem as fp
 from fin_params_mixed import MEAN, STD, MEAN_hU, STD_hU, Tinf, Tw, b, d, L, x, t
@@ -79,6 +89,77 @@ Var_T_fixed = f[0]**2 * sigma_X[0]**2 + f[1]**2 * sigma_X[1]**2 + f[2]**2 * sigm
 Var_T_lower = Var_T_fixed + f[3]**2 * sigma_hU_lo**2
 Var_T_upper = Var_T_fixed + f[3]**2 * sigma_hU_hi**2
 
+
+# ── Affine arithmetic (AA), for validation against the IA bounds above ──────
+class Affine:
+    """Affine form over t: center(t) + sum_k coeffs[k](t) * eps_k, eps_k in [-1, 1].
+    Only add/scalar-multiply are needed here -- every epistemic quantity
+    below appears exactly once, linearly, so no square()/mul() is required."""
+
+    _counter = [0]
+    __array_ufunc__ = None  # let numpy defer array*Affine to Affine.__rmul__
+
+    def __init__(self, center, coeffs=None):
+        self.center = np.asarray(center, dtype=float)
+        self.coeffs = dict(coeffs) if coeffs else {}
+
+    @classmethod
+    def variable(cls, center, radius):
+        cls._counter[0] += 1
+        return cls(np.asarray(center, dtype=float), {cls._counter[0]: np.asarray(radius, dtype=float)})
+
+    @staticmethod
+    def _as_affine(v):
+        return v if isinstance(v, Affine) else Affine(np.asarray(v, dtype=float))
+
+    def __add__(self, other):
+        o = Affine._as_affine(other)
+        c = dict(self.coeffs)
+        for k, v in o.coeffs.items():
+            c[k] = c.get(k, 0.0) + v
+        return Affine(self.center + o.center, c)
+
+    __radd__ = __add__
+
+    def __mul__(self, other):
+        other = np.asarray(other, dtype=float)
+        return Affine(self.center * other, {k: v * other for k, v in self.coeffs.items()})
+
+    __rmul__ = __mul__
+
+    def to_interval(self):
+        rad = np.zeros_like(self.center)
+        for v in self.coeffs.values():
+            rad = rad + np.abs(v)
+        return self.center - rad, self.center + rad
+
+
+dTheta_aa = [Affine.variable(0.0, Delta_y[j]) for j in range(3)]
+E_T_aff = Affine(T0)
+for j in range(3):
+    E_T_aff = E_T_aff + g[j] * dTheta_aa[j]
+E_T_aa_lower, E_T_aa_upper = E_T_aff.to_interval()
+
+sigma_hU_sq_mid = (sigma_hU_lo**2 + sigma_hU_hi**2) / 2
+sigma_hU_sq_rad = (sigma_hU_hi**2 - sigma_hU_lo**2) / 2
+sigma_hU_sq_aff = Affine.variable(sigma_hU_sq_mid, sigma_hU_sq_rad)
+Var_T_aff = Affine(Var_T_fixed) + f[3]**2 * sigma_hU_sq_aff
+Var_T_aa_lower, Var_T_aa_upper = Var_T_aff.to_interval()
+
+# ── 1st-order Taylor model (TM), for validation against the IA bounds above ─
+# E[T] and Var[T] are literally g.Delta_theta and f_hU^2 . sigma_hU^2 -- confirm
+# their curvature (Hessian w.r.t. the epistemic variables) is exactly zero,
+# so the TM remainder is 0 and TM collapses to the same linear expansion IA used.
+_dt0, _dt1, _dt2, _shu = sp.symbols("dt0 dt1 dt2 shu")
+_g0, _g1, _g2, _fhu2 = sp.symbols("g0 g1 g2 fhu2")
+_E_T_expr = _g0 * _dt0 + _g1 * _dt1 + _g2 * _dt2   # + T0 (constant; drops out of the Hessian)
+_Var_T_expr = _fhu2 * _shu                          # + Var_T_fixed (constant; drops out)
+assert sp.hessian(_E_T_expr, (_dt0, _dt1, _dt2)).is_zero_matrix
+assert sp.diff(_Var_T_expr, _shu, 2) == 0
+
+E_T_tm_lower, E_T_tm_upper = E_T_lower, E_T_upper
+Var_T_tm_lower, Var_T_tm_upper = Var_T_lower, Var_T_upper
+
 # ── MC bounds from double_loop_MCS_data.npz, for comparison ─────────────────
 mc_data = np.load("double_loop_MCS_data.npz")
 T_mc = mc_data["T"]  # shape (num_outer, N_inner, len(t))
@@ -132,6 +213,32 @@ fig.tight_layout()
 fig.savefig("figures/TSE_1st_order_bounds_E_T_vs_t.png", transparent=True)
 plt.close(fig)
 
+
+def save_bound_plot(lower, upper, ylabel, method_label, fname, lo_mc, hi_mc, mid_mc):
+    mid = (lower + upper) / 2
+    fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
+    ax.fill_between(t, lo_mc, hi_mc, color="0.75", alpha=0.5, zorder=1, label="MC bounds")
+    ax.plot(t, lower, color="#0C447C", lw=1.8, zorder=2, label=f"TSE ({method_label}) lower")
+    ax.plot(t, upper, color="#185FA5", lw=1.8, zorder=2, label=f"TSE ({method_label}) upper")
+    ax.plot(t, mid, color="#A32D2D", lw=1.5, ls="--", zorder=3, label="TSE midpoint")
+    ax.plot(t, mid_mc, color="0.35", lw=1.5, ls=":", zorder=3, label="MC midpoint")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel(ylabel)
+    ax.grid(True, linestyle="--", alpha=0.4)
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(f"figures/{fname}", transparent=True)
+    plt.close(fig)
+
+
+# ── Plot: affine-arithmetic bounds vs MC bounds (E[T]) -- validation ────────
+save_bound_plot(E_T_aa_lower, E_T_aa_upper, r"$\mathbb{E}[T]$ [K]", "affine",
+                "TSE_1st_order_bounds_aa_E_T_vs_t.png", E_T_lower_mc, E_T_upper_mc, E_T_mid_mc)
+
+# ── Plot: 1st-order Taylor-model bounds vs MC bounds (E[T]) -- validation ───
+save_bound_plot(E_T_tm_lower, E_T_tm_upper, r"$\mathbb{E}[T]$ [K]", "Taylor model",
+                "TSE_1st_order_bounds_tm_E_T_vs_t.png", E_T_lower_mc, E_T_upper_mc, E_T_mid_mc)
+
 # ── Plot: 1st-order TSE bounds vs MC bounds (Var[T]) ─────────────────────────
 fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
 ax.fill_between(t, Var_T_lower_mc, Var_T_upper_mc, color="0.75", alpha=0.5,
@@ -148,8 +255,30 @@ fig.tight_layout()
 fig.savefig("figures/TSE_1st_order_bounds_Var_T_vs_t.png", transparent=True)
 plt.close(fig)
 
+# ── Plot: affine-arithmetic bounds vs MC bounds (Var[T]) -- validation ──────
+save_bound_plot(Var_T_aa_lower, Var_T_aa_upper, r"$\mathrm{Var}[T]$ [K$^2$]", "affine",
+                "TSE_1st_order_bounds_aa_Var_T_vs_t.png", Var_T_lower_mc, Var_T_upper_mc, Var_T_mid_mc)
+
+# ── Plot: 1st-order Taylor-model bounds vs MC bounds (Var[T]) -- validation ─
+save_bound_plot(Var_T_tm_lower, Var_T_tm_upper, r"$\mathrm{Var}[T]$ [K$^2$]", "Taylor model",
+                "TSE_1st_order_bounds_tm_Var_T_vs_t.png", Var_T_lower_mc, Var_T_upper_mc, Var_T_mid_mc)
+
 print(f"\n{'':<20}{'TSE lower':>12}{'TSE upper':>12}{'MC lower':>12}{'MC upper':>12}")
 print(f"{'E[T] (t=450s)':<20}{E_T_lower[-1]:>12.4f}{E_T_upper[-1]:>12.4f}"
       f"{E_T_lower_mc[-1]:>12.4f}{E_T_upper_mc[-1]:>12.4f}")
 print(f"{'Var[T] (t=450s)':<20}{Var_T_lower[-1]:>12.4f}{Var_T_upper[-1]:>12.4f}"
       f"{Var_T_lower_mc[-1]:>12.4f}{Var_T_upper_mc[-1]:>12.4f}")
+
+# ── Confirm IA == AA == TM exactly, as expected at 1st order ────────────────
+print(f"\n{'':<28}{'IA':>22}{'AA':>22}{'TM':>22}")
+print(f"{'E[T] (t=450s)':<28}"
+      f"{f'[{E_T_lower[-1]:.4f}, {E_T_upper[-1]:.4f}]':>22}"
+      f"{f'[{E_T_aa_lower[-1]:.4f}, {E_T_aa_upper[-1]:.4f}]':>22}"
+      f"{f'[{E_T_tm_lower[-1]:.4f}, {E_T_tm_upper[-1]:.4f}]':>22}")
+print(f"{'Var[T] (t=450s)':<28}"
+      f"{f'[{Var_T_lower[-1]:.4f}, {Var_T_upper[-1]:.4f}]':>22}"
+      f"{f'[{Var_T_aa_lower[-1]:.4f}, {Var_T_aa_upper[-1]:.4f}]':>22}"
+      f"{f'[{Var_T_tm_lower[-1]:.4f}, {Var_T_tm_upper[-1]:.4f}]':>22}")
+assert np.allclose(E_T_lower, E_T_aa_lower) and np.allclose(E_T_upper, E_T_aa_upper)
+assert np.allclose(Var_T_lower, Var_T_aa_lower) and np.allclose(Var_T_upper, Var_T_aa_upper)
+print("\nIA, AA, and TM bounds agree exactly (as expected -- E[T]/Var[T] are affine here).")
