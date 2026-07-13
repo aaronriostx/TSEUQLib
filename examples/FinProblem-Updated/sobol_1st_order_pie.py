@@ -73,10 +73,10 @@ def plot_one(method_key, filename):
 
     ax_bar.axvline(100, color="gray", linestyle="--", linewidth=1)
     ax_bar.set_yticks(list(y))
-    ax_bar.set_yticklabels([labels[v] for v in variables], fontsize=11)
+    ax_bar.set_yticklabels([labels[v] for v in variables], fontsize=16)
     ax_bar.set_ylim(-0.6, len(variables) - 0.4)
     ax_bar.invert_yaxis()
-    ax_bar.set_xlabel("Sobol index (%)")
+    ax_bar.set_xlabel("Sobol index (%)", fontsize=16)
     ax_bar.set_xlim(x_min, x_max)
     ax_bar.spines[["top", "right"]].set_visible(False)
     ax_bar.grid(axis="x", linewidth=0.5, alpha=0.3)
