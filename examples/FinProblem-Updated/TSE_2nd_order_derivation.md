@@ -1,168 +1,257 @@
 # 2nd-order Taylor series expansion of the thermal fin problem
 
-This note derives the 2nd-order Taylor series expansion (TSE) of the fin
-temperature history $T(0,\tau)$ (written as $T$ below) implemented in
-`TSE_2nd_order_bounds.py`, extending `TSE_1st_order_derivation.md` with the
-curvature (Hessian) terms that let the epistemic location parameters
-$T_\infty, T_W, b$ start to affect $\mathrm{Var}[T]$, and that couple
-$\sigma_{h_U}$'s epistemic scale into the expansion's curvature as well as
-its linear part.
+This note rebuilds the 2nd-order Taylor series expansion (TSE) of the fin
+temperature history $T(0,\tau)$ (written $T$ below) from the univariate cases
+worked out in `TSE_univariate_epistemic_notes.md`, rather than asserting the
+multivariate formula and checking it after the fact (as the previous version
+of this note did).
 
-## Variable partition
+## Variable partition, mapped to the univariate cases
 
-Same partition as the 1st-order note:
+| Variable | Role | Case (`TSE_univariate_epistemic_notes.md`) |
+|---|---|---|
+| $k, C_p, \rho$ | aleatory Gaussian, mean **and** std precisely known | none — the plain precise-$\mu_x,\sigma_x$ baseline at the top of Case 2 |
+| $h_U$ | aleatory Gaussian, mean precise, **std $\sigma_{h_U}$ epistemic** | **Case 3** |
+| $T_\infty, T_W, b$ | not random — deterministic, known only within an interval | **Case 1** |
 
-- **Aleatory** $\mathbf{X} = [k,\, C_p,\, \rho,\, h_U]$: independent Gaussian random variables with fixed, precisely-known means and standard deviations — *except* $h_U$, whose standard deviation $\sigma_{h_U}$ is itself only known to lie in an interval.
-- **Epistemic** $\mathbf{y} = [T_\infty,\, T_W,\, b]$: interval-valued location parameters, midpoints $\mathbf{y}_0$.
+Case 2 (epistemic mean) and Case 4 (numerical-differentiation error) don't
+apply to anything here: nothing has an epistemic mean, and the
+finite-difference gradient/Hessian below are used as exact, not carrying an
+FD-error interval of their own.
 
-## Nominal point
-
-$$
-(\boldsymbol{\mu}_X, \mathbf{y}_0), \qquad y_{0,j} = \frac{\underline{y}_j + \overline{y}_j}{2}
-$$
-
-exactly as in the 1st-order note. Write $\Delta X_i = X_i - \mu_{X_i}$ (aleatory deviations, random) and $\Delta\theta_j = y_j - y_{0,j}$ (epistemic deviations, symbolic/interval-valued — kept as free variables, not integrated over).
-
-## $\sigma_{h_U}$ still needs the location-scale treatment — but it now provably doesn't change how the code computes it
-
-The 1st-order note flagged a subtlety: $\sigma_{h_U}$ is a *scale* parameter, and naively Taylor-expanding $T$ in $\sigma_{h_U}$ directly (rather than through $h_U = \mu_{h_U} + \sigma_{h_U} Z$) gives the wrong object for variance propagation. The same subtlety applies at 2nd order, and it's worth checking explicitly whether `TSE_2nd_order_bounds.py` needs to compute derivatives with respect to $Z$ (via the reparameterization) rather than the $\partial T/\partial h_U$, $\partial^2 T/\partial h_U^2$ it actually finite-differences.
-
-**Claim: it doesn't need to.** Let $\dfrac{\partial T}{\partial h_U}\bigg|_{\text{nom}}, \dfrac{\partial^2 T}{\partial h_U^2}\bigg|_{\text{nom}}, \dfrac{\partial^2 T}{\partial h_U\,\partial X_i}\bigg|_{\text{nom}}\;(i\in\{k,C_p,\rho\}), \dfrac{\partial^2 T}{\partial h_U\,\partial y_j}\bigg|_{\text{nom}}\;(j\in\{T_\infty,T_W,b\})$ denote the gradient/Hessian entries computed by finite-differencing $T$ directly in $h_U$ (exactly what the code does — $h_U$ is just the 4th entry of $z$ in `TSE_2nd_order_bounds.py`). Since $h_U = \mu_{h_U} + \sigma_{h_U} Z$ is an *affine* function of $Z$ with constant slope $\sigma_{h_U}$, the chain rule gives the corresponding $Z$-derivatives exactly:
+## Nominal point and deviations
 
 $$
-\dfrac{\partial T}{\partial Z}\bigg|_{\text{nom}} = \sigma_{h_U} \dfrac{\partial T}{\partial h_U}\bigg|_{\text{nom}}, \qquad \dfrac{\partial^2 T}{\partial Z^2}\bigg|_{\text{nom}} = \sigma_{h_U}^2\, \dfrac{\partial^2 T}{\partial h_U^2}\bigg|_{\text{nom}}, \qquad \dfrac{\partial^2 T}{\partial Z\,\partial X_i}\bigg|_{\text{nom}} = \sigma_{h_U}\, \dfrac{\partial^2 T}{\partial h_U\,\partial X_i}\bigg|_{\text{nom}}, \qquad \dfrac{\partial^2 T}{\partial Z\,\partial y_j}\bigg|_{\text{nom}} = \sigma_{h_U}\, \dfrac{\partial^2 T}{\partial h_U\,\partial y_j}\bigg|_{\text{nom}}
+\boldsymbol{\mu}_X = (\mu_k, \mu_{C_p}, \mu_\rho, \mu_{h_U}), \qquad
+\mathbf{y}_0 = (T_{\infty,0}, T_{W,0}, b_0), \qquad y_{0,j} = \frac{\underline{y}_j+\overline{y}_j}{2}
 $$
 
-(no extra terms, since $\partial^2 h_U/\partial Z^2 = 0$). Substituting these into every place a "$h_U$" gradient/Hessian entry would appear in the $\mathrm{Var}$ formula derived below, together with $\mathrm{Var}[Z] = 1$ exactly (fixed, not epistemic), reproduces **exactly** the same expression as substituting the raw $\partial T/\partial h_U$ and $\partial^2 T/\partial h_U\,\partial(\cdot)$ entries (gradient and every Hessian row/column touching $h_U$), each evaluated at nom, together with $\mathrm{Var}[h_U] = \sigma_{h_U}^2$ (epistemic) — every $\sigma_{h_U}$ power introduced by the chain rule exactly cancels/matches the power that would otherwise come from using $\mathrm{Var}[h_U]=\sigma_{h_U}^2$ directly. (Checked term-by-term in the variance derivation below; e.g. the diagonal curvature term $\tfrac12 \left(\dfrac{\partial^2 T}{\partial Z^2}\bigg|_{\text{nom}}\right)^{\!2}\mathrm{Var}[Z]^2 = \tfrac12\left(\sigma_{h_U}^2 \dfrac{\partial^2 T}{\partial h_U^2}\bigg|_{\text{nom}}\right)^2 = \tfrac12 \left(\dfrac{\partial^2 T}{\partial h_U^2}\bigg|_{\text{nom}}\right)^{\!2}\sigma_{h_U}^4$, identical to treating $h_U$ as an ordinary aleatory variable with $\dfrac{\partial^2 T}{\partial h_U^2}\bigg|_{\text{nom}}$ and $\mathrm{Var}[h_U]^2=\sigma_{h_U}^4$.)
+- $k, C_p, \rho$: $\Delta X_i = X_i - \mu_i = \sigma_i Z_i$, $Z_i\sim N(0,1)$ iid, $\sigma_i$ fixed and precise ($i \in \{k, C_p, \rho\}$).
+- $h_U$ (**Case 3**): $\Delta X_{h_U} = h_U - \mu_{h_U} = \sigma_{h_U} Z_{h_U}$, $Z_{h_U}\sim N(0,1)$, independent of $Z_k, Z_{C_p}, Z_\rho$; $\sigma_{h_U}\in[\underline{\sigma_{h_U}},\overline{\sigma_{h_U}}]$ is epistemic. As in Case 3, $\sigma_{h_U}$ is substituted **directly as its interval** — no midpoint/deviation split ($\sigma_{h_U} = \sigma_{h_U,0}+\Delta\sigma_{h_U}$) is needed, since that split was only ever for separating epistemic/aleatory/mixed pieces in a term table, not a computational requirement (see Case 3's discussion of Option "exact interval substitution" vs. the decomposed form).
+- $T_\infty, T_W, b$ (**Case 1**): $\Delta\theta_j = y_j - y_{0,j} \in [-r_j, r_j]$, $j\in\{T_\infty,T_W,b\}$ — deterministic intervals, no randomness.
 
-So: **treat $h_U$ as the 4th aleatory variable with $\mathrm{Var}[h_U] := \sigma_{h_U}^2$ (epistemic interval), using raw finite differences in $h_U$** — exactly what the code already does — is not a shortcut that happens to work, it is the reparameterized derivation, algebraically simplified. No code change is implied by this note; it's a correctness check on the existing implementation.
-
-## 2nd-order expansion
+## General 2nd-order multivariate TSE (before substituting case-specific forms)
 
 $$
-T \approx T_0(\tau) + \sum_i \dfrac{\partial T}{\partial X_i}\bigg|_{\text{nom}}\,\Delta X_i + \sum_j \dfrac{\partial T}{\partial y_j}\bigg|_{\text{nom}}\,\Delta\theta_j + \frac12\sum_{i,i'} \dfrac{\partial^2 T}{\partial X_i\,\partial X_{i'}}\bigg|_{\text{nom}}\,\Delta X_i \Delta X_{i'} + \sum_{i,j} \dfrac{\partial^2 T}{\partial X_i\,\partial y_j}\bigg|_{\text{nom}}\,\Delta X_i\,\Delta\theta_j + \frac12\sum_{j,j'} \dfrac{\partial^2 T}{\partial y_j\,\partial y_{j'}}\bigg|_{\text{nom}}\,\Delta\theta_j\Delta\theta_{j'}
+T \approx T_0(\tau) + \sum_i \dfrac{\partial T}{\partial X_i}\bigg|_{\text{nom}}\Delta X_i + \sum_j \dfrac{\partial T}{\partial y_j}\bigg|_{\text{nom}}\Delta\theta_j + \frac12\sum_{i,i'} \dfrac{\partial^2 T}{\partial X_i\partial X_{i'}}\bigg|_{\text{nom}}\Delta X_i\Delta X_{i'} + \sum_{i,j} \dfrac{\partial^2 T}{\partial X_i\partial y_j}\bigg|_{\text{nom}}\Delta X_i\Delta\theta_j + \frac12\sum_{j,j'} \dfrac{\partial^2 T}{\partial y_j\partial y_{j'}}\bigg|_{\text{nom}}\Delta\theta_j\Delta\theta_{j'}
 $$
 
-with $i,i'$ ranging over the aleatory indices $\{k, C_p, \rho, h_U\}$ and $j,j'$ over the epistemic indices $\{T_\infty, T_W, b\}$ — so the $\Delta X_i\Delta X_{i'}$ term above is the aleatory–aleatory curvature, $\Delta X_i\Delta\theta_j$ the mixed curvature, and $\Delta\theta_j\Delta\theta_{j'}$ the epistemic–epistemic curvature. All coefficients are functions of $\tau$, as in the 1st-order note.
+with $i,i'$ over $\{k,C_p,\rho,h_U\}$ and $j,j'$ over $\{T_\infty,T_W,b\}$. This
+polynomial's coefficients (the partials, evaluated at the nominal point) don't
+care yet how $\Delta X_i$ is generated — that's where the case substitutions
+come in next.
+
+## Substituting the case-specific forms
+
+Substitute $\Delta X_i = \sigma_i Z_i$ ($i\in\{k,C_p,\rho\}$, $\sigma_i$ crisp)
+and $\Delta X_{h_U} = \sigma_{h_U} Z_{h_U}$ ($\sigma_{h_U}$ epistemic) into
+**every** place $\Delta X_i$ appears above — this is an exact substitution,
+not a further truncation, since $\Delta X_{h_U}$ literally equals
+$\sigma_{h_U}Z_{h_U}$ (Case 3). Tracking only where $h_U$ appears:
+
+- **Linear term**: $\dfrac{\partial T}{\partial h_U}\Big|_{\text{nom}}\,\sigma_{h_U} Z_{h_U}$ — Case 3's "mixed, linear" signature ($\partial f/\partial x \cdot \sigma_x Z$).
+- **Pure quadratic** ($i=i'=h_U$): $\tfrac12\dfrac{\partial^2 T}{\partial h_U^2}\Big|_{\text{nom}}\,\sigma_{h_U}^2 Z_{h_U}^2$ — Case 3's "mixed, quadratic" signature.
+- **Aleatory–aleatory cross** ($i=h_U$, $i'\in\{k,C_p,\rho\}$): $\dfrac{\partial^2 T}{\partial h_U\,\partial X_{i'}}\Big|_{\text{nom}}\,\sigma_{h_U}Z_{h_U}\,\sigma_{i'}Z_{i'}$ — mixed in $\sigma_{h_U}$, but both factors are random.
+- **Mixed aleatory–epistemic cross** ($i=h_U$, epistemic $y_j$): $\dfrac{\partial^2 T}{\partial h_U\,\partial y_j}\Big|_{\text{nom}}\,\sigma_{h_U}Z_{h_U}\,\Delta\theta_j$ — a **doubly mixed** term: epistemic-scale ($\sigma_{h_U}$) $\times$ epistemic-location ($\Delta\theta_j$) $\times$ aleatory ($Z_{h_U}$).
+
+This is the same substitution $\Delta X_{h_U}\to\sigma_{h_U}Z_{h_U}$ applied
+uniformly, term by term, into a polynomial whose coefficients (the partials)
+don't change under it. That confirms — rather than merely asserting via a
+separate chain-rule argument, as the previous version of this note did — that
+finite-differencing directly in $h_U$ and later substituting
+$\mathrm{Var}[h_U] := \sigma_{h_U}^2$ wherever a second moment of $h_U$ is
+needed reproduces exactly the Case-3 substitution, *including* the mixed
+$h_U\times y_j$ Hessian term the earlier equivalence check didn't explicitly
+re-verify.
 
 ## Expectation
 
-Take $\mathbb{E}_{\mathbf{X}}[\cdot]$, leaving $\Delta\theta$ symbolic. Since $\mathbf{X}$ is independent with $\mathbb{E}[\Delta X_i]=0$: the linear-in-$\Delta X$ term vanishes; the mixed term $\dfrac{\partial^2 T}{\partial X_i\,\partial y_j}\bigg|_{\text{nom}}\Delta X_i\Delta\theta_j$ vanishes ($\mathbb{E}[\Delta X_i]=0$); the aleatory–aleatory quadratic term reduces to its diagonal, since $\mathbb{E}[\Delta X_i\Delta X_{i'}] = 0$ for $i\neq i'$ (independence) and $=\sigma_i^2$ for $i=i'$:
+Take $\mathbb{E}_Z[\cdot]$ over $Z_k, Z_{C_p}, Z_\rho, Z_{h_U}$ (independent
+standard normal), leaving $\Delta\theta$ (Case 1, deterministic) symbolic.
+Every term linear in a single $Z_i$ vanishes ($\mathbb{E}[Z_i]=0$), including
+the doubly-mixed $h_U\times y_j$ term above (it's linear in $Z_{h_U}$ alone).
+Aleatory–aleatory cross terms vanish for $i\neq i'$ (independence,
+$\mathbb{E}[Z_i]=0$); the diagonal survives with $\mathbb{E}[Z_i^2]=1$:
 
 $$
-\mathbb{E}_{\mathbf{X}}[T](\Delta\theta) = \underbrace{T_0(\tau) + \frac12\sum_i \dfrac{\partial^2 T}{\partial X_i^2}\bigg|_{\text{nom}}\,\sigma_i^2}_{\text{constant in }\Delta\theta} + \sum_j \dfrac{\partial T}{\partial y_j}\bigg|_{\text{nom}}\,\Delta\theta_j + \frac12\sum_{j,j'} \dfrac{\partial^2 T}{\partial y_j\,\partial y_{j'}}\bigg|_{\text{nom}}\,\Delta\theta_j\Delta\theta_{j'}
+\mathbb{E}_{\mathbf{X}}[T](\Delta\theta) = \underbrace{T_0(\tau) + \frac12\sum_i \dfrac{\partial^2 T}{\partial X_i^2}\bigg|_{\text{nom}}\sigma_i^2}_{\text{constant in }\Delta\theta,\ \sigma_{h_U}^2\text{ epistemic}} + \sum_j \dfrac{\partial T}{\partial y_j}\bigg|_{\text{nom}}\Delta\theta_j + \frac12\sum_{j,j'} \dfrac{\partial^2 T}{\partial y_j\,\partial y_{j'}}\bigg|_{\text{nom}}\Delta\theta_j\Delta\theta_{j'}
 $$
 
-Written out term by term (no summation operators), with $\Delta T_\infty = T_\infty - T_{\infty,0}$, etc.:
-
-$$
-\mathbb{E}_{\mathbf{X}}[T](\Delta\theta) = T_0(\tau)
-+ \frac12\dfrac{\partial^2 T}{\partial k^2}\bigg|_{\text{nom}}\sigma_k^2
-+ \frac12\dfrac{\partial^2 T}{\partial C_p^2}\bigg|_{\text{nom}}\sigma_{C_p}^2
-+ \frac12\dfrac{\partial^2 T}{\partial \rho^2}\bigg|_{\text{nom}}\sigma_\rho^2
-+ \frac12\dfrac{\partial^2 T}{\partial h_U^2}\bigg|_{\text{nom}}\sigma_{h_U}^2
-$$
-
-$$
-+\; \dfrac{\partial T}{\partial T_\infty}\bigg|_{\text{nom}}\Delta T_\infty
-+ \dfrac{\partial T}{\partial T_W}\bigg|_{\text{nom}}\Delta T_W
-+ \dfrac{\partial T}{\partial b}\bigg|_{\text{nom}}\Delta b
-$$
-
-$$
-+\; \frac12\dfrac{\partial^2 T}{\partial T_\infty^2}\bigg|_{\text{nom}}\Delta T_\infty^2
-+ \frac12\dfrac{\partial^2 T}{\partial T_W^2}\bigg|_{\text{nom}}\Delta T_W^2
-+ \frac12\dfrac{\partial^2 T}{\partial b^2}\bigg|_{\text{nom}}\Delta b^2
-$$
-
-$$
-+\; \dfrac{\partial^2 T}{\partial T_\infty\,\partial T_W}\bigg|_{\text{nom}}\Delta T_\infty\Delta T_W
-+ \dfrac{\partial^2 T}{\partial T_\infty\,\partial b}\bigg|_{\text{nom}}\Delta T_\infty\Delta b
-+ \dfrac{\partial^2 T}{\partial T_W\,\partial b}\bigg|_{\text{nom}}\Delta T_W\Delta b
-$$
-
-(the last two lines are the epistemic–epistemic curvature: three diagonal terms and three off-diagonal terms, the latter already merged using $\partial^2T/\partial T_\infty\partial T_W = \partial^2T/\partial T_W\partial T_\infty$, etc., so each unordered pair appears once with coefficient $1$ rather than twice with coefficient $\tfrac12$.)
-
-This is the formula in `TSE_2nd_order_bounds.py`. The curvature correction $\tfrac12\sum_i \dfrac{\partial^2 T}{\partial X_i^2}\bigg|_{\text{nom}}\sigma_i^2$ is new relative to 1st order — even the *constant* term now depends on how curved $T$ is along each aleatory direction, including $h_U$ via $\dfrac{\partial^2 T}{\partial h_U^2}\bigg|_{\text{nom}}\sigma_{h_U}^2$ (epistemic-interval-valued, since $\sigma_{h_U}^2$ is).
+where $\sigma_i^2$ at $i=h_U$ is the epistemic interval
+$[\underline{\sigma_{h_U}}^2,\overline{\sigma_{h_U}}^2]$ (Case 3, substituted
+directly, exact), and $\Delta\theta_j,\ \Delta\theta_j\Delta\theta_{j'}$ are
+Case 1 objects. **Case 1's one-sided-square caveat applies to the diagonal
+$j=j'$ terms**: $\Delta\theta_j^2 \in [0, r_j^2]$, not $[-r_j^2,r_j^2]$, since
+$\Delta\theta_j^2\ge 0$ always — this biases $\mathbb{E}[T]$ rather than
+merely widening it. Off-diagonal $j\neq j'$ products are ordinary interval
+products (can be negative), not subject to that one-sided restriction, since
+$\Delta\theta_j$ and $\Delta\theta_{j'}$ are different independent epistemic
+quantities.
 
 ## Variance
 
-Write $T - \mathbb{E}_{\mathbf{X}}[T] = L + Q$, where
+Same $L+Q$ split as before, $T-\mathbb{E}_{\mathbf X}[T] = L+Q$:
 
 $$
-L = \sum_i \left(\dfrac{\partial T}{\partial X_i}\bigg|_{\text{nom}} + \sum_j \dfrac{\partial^2 T}{\partial X_i\,\partial y_j}\bigg|_{\text{nom}}\,\Delta\theta_j\right)\Delta X_i, \qquad Q = \frac12\sum_{i,i'} \dfrac{\partial^2 T}{\partial X_i\,\partial X_{i'}}\bigg|_{\text{nom}}\,\Delta X_i\Delta X_{i'} - \frac12\sum_i \dfrac{\partial^2 T}{\partial X_i^2}\bigg|_{\text{nom}}\sigma_i^2
+L = \sum_i \left(\dfrac{\partial T}{\partial X_i}\bigg|_{\text{nom}} + \sum_j \dfrac{\partial^2 T}{\partial X_i\,\partial y_j}\bigg|_{\text{nom}}\Delta\theta_j\right)\Delta X_i, \qquad Q = \frac12\sum_{i,i'} \dfrac{\partial^2 T}{\partial X_i\partial X_{i'}}\bigg|_{\text{nom}}\Delta X_i\Delta X_{i'} - \frac12\sum_i \dfrac{\partial^2 T}{\partial X_i^2}\bigg|_{\text{nom}}\sigma_i^2
 $$
 
-$L$ collects everything linear in $\Delta X$: each $\Delta X_i$'s coefficient is its plain gradient $\partial T/\partial X_i|_{\text{nom}}$ plus the epistemic correction from the mixed Hessian, $\sum_j \partial^2T/\partial X_i\partial y_j|_{\text{nom}}\Delta\theta_j$. $Q$ is the aleatory quadratic form, re-centered so $\mathbb{E}[Q]=0$. Then $\mathrm{Var}_{\mathbf{X}}[T] = \mathbb{E}[L^2] + 2\,\mathbb{E}[LQ] + \mathbb{E}[Q^2]$.
+with $\Delta X_i = \sigma_i Z_i$ substituted throughout (case-specific: crisp
+$\sigma_i$ for $k,C_p,\rho$; epistemic-interval $\sigma_{h_U}$ for $h_U$, Case
+3). $\mathrm{Var}_{\mathbf X}[T] = \mathbb{E}[L^2] + 2\mathbb{E}[LQ] + \mathbb{E}[Q^2]$.
 
-**$\mathbb{E}[L^2]$.** By independence and zero mean, cross terms $\mathbb{E}[\Delta X_i\Delta X_{i'}]=0$ for $i\neq i'$:
-
-$$
-\mathbb{E}[L^2] = \sum_i \left(\dfrac{\partial T}{\partial X_i}\bigg|_{\text{nom}} + \sum_j \dfrac{\partial^2 T}{\partial X_i\,\partial y_j}\bigg|_{\text{nom}}\,\Delta\theta_j\right)^{\!2}\sigma_i^2
-$$
-
-**$\mathbb{E}[LQ] = 0$ exactly.** This is exactly the place a 3rd central moment would enter — $LQ$ is cubic in $\Delta X$. But every cubic term is a product of an odd number of independent, zero-mean $\Delta X_i$ factors — either one factor alone ($\mathbb{E}[\Delta X_i]=0$), or one factor times a square of a *different* independent variable ($\mathbb{E}[\Delta X_i]\cdot\mathbb{E}[\Delta X_{i'}^2]=0$), or three distinct independent zero-mean factors ($\mathbb{E}[\Delta X_i]\mathbb{E}[\Delta X_{i'}]\mathbb{E}[\Delta X_{i''}]=0$), or (when all three factors coincide) $\mathbb{E}[\Delta X_i^3]$, the 3rd central moment itself, which is exactly $0$ for any distribution symmetric about its mean. Every case vanishes *exactly*, not approximately — so no 3rd-moment symbol survives into the formula, and this needs only independence and symmetry, not specifically Gaussianity.
-
-**$\mathbb{E}[Q^2]$: this step does need Gaussianity.** $Q$ is the centered version of the quadratic form $q=\sum_{i,i'} a_{ii'}\Delta X_i\Delta X_{i'}$ with $a_{ii'} = \tfrac12 \dfrac{\partial^2 T}{\partial X_i\,\partial X_{i'}}\bigg|_{\text{nom}}$ (symmetric), so $\mathbb{E}[Q^2] = \mathrm{Var}[q]$. Splitting $q$ into diagonal and off-diagonal parts (independent of each other, and off-diagonal pairs mutually uncorrelated, by independence of the $\Delta X_i$):
+**$\mathbb{E}[L^2]$** (independence, $\mathbb{E}[Z_i]=0$, cross terms vanish):
 
 $$
-\mathrm{Var}[q] = \sum_i a_{ii}^2\,\mathrm{Var}[\Delta X_i^2] + 4\sum_{i<i'} a_{ii'}^2\,\sigma_i^2\sigma_{i'}^2
+\mathbb{E}[L^2] = \sum_i \left(\dfrac{\partial T}{\partial X_i}\bigg|_{\text{nom}} + \sum_j \dfrac{\partial^2 T}{\partial X_i\,\partial y_j}\bigg|_{\text{nom}}\Delta\theta_j\right)^{\!2}\sigma_i^2
 $$
 
-The off-diagonal term needs only independence: $\mathrm{Var}[\Delta X_i\Delta X_{i'}] = \mathbb{E}[\Delta X_i^2]\mathbb{E}[\Delta X_{i'}^2] = \sigma_i^2\sigma_{i'}^2$. The diagonal term needs the 4th central moment: $\mathrm{Var}[\Delta X_i^2] = \mu_{4,i} - \sigma_i^4$. For **Gaussian** $\Delta X_i$ (true here — $k,C_p,\rho$ are modeled Gaussian, and $h_U$'s aleatory part is the Gaussian $Z$), $\mu_{4,i}=3\sigma_i^4$, so $\mathrm{Var}[\Delta X_i^2] = 2\sigma_i^4$. Substituting $a_{ii'}=\tfrac12 \dfrac{\partial^2 T}{\partial X_i\,\partial X_{i'}}\bigg|_{\text{nom}}$:
+The $i=h_U$ term of this sum is exactly the doubly-mixed term's contribution:
+writing $B_{h_U} := \partial T/\partial h_U|_{\text{nom}} + \sum_j \partial^2T/\partial h_U\partial y_j|_{\text{nom}}\Delta\theta_j$,
+the linear-in-$Z_{h_U}$ piece of $L$ is $B_{h_U}\sigma_{h_U}Z_{h_U}$, so
+$\mathbb{E}[(B_{h_U}\sigma_{h_U}Z_{h_U})^2] = B_{h_U}^2\sigma_{h_U}^2\,\mathbb{E}[Z_{h_U}^2] = B_{h_U}^2\sigma_{h_U}^2$
+— Case 3's delta-method variance contribution $(\partial f/\partial x)^2\sigma_x^2$,
+generalized with the Case-1 correction $B_{h_U}$ absorbing the epistemic
+$T_\infty,T_W,b$ dependence.
+
+**$\mathbb{E}[LQ]=0$ exactly**, by the same odd-moment/symmetry argument as
+before (independence and zero-mean symmetric $Z_i$; no Gaussianity needed).
+
+**$\mathbb{E}[Q^2]$** needs Gaussianity only in its diagonal piece, exactly as
+before ($\mu_{4,i}=3\sigma_i^4$ for $i\in\{k,C_p,\rho,h_U\}$ — $Z_{h_U}$ is
+still standard normal, Case 3 only makes its *scale* epistemic, not its
+shape):
 
 $$
-\mathbb{E}[Q^2] = \frac12\sum_i \left(\dfrac{\partial^2 T}{\partial X_i^2}\bigg|_{\text{nom}}\right)^{\!2}\sigma_i^4 + \sum_{i<i'} \left(\dfrac{\partial^2 T}{\partial X_i\,\partial X_{i'}}\bigg|_{\text{nom}}\right)^{\!2}\sigma_i^2\sigma_{i'}^2 = \frac12\sum_{i,i'} \left(\dfrac{\partial^2 T}{\partial X_i\,\partial X_{i'}}\bigg|_{\text{nom}}\right)^{\!2}\,\sigma_i^2\sigma_{i'}^2
+\mathbb{E}[Q^2] = \frac12\sum_{i,i'} \left(\dfrac{\partial^2 T}{\partial X_i\,\partial X_{i'}}\bigg|_{\text{nom}}\right)^{\!2}\sigma_i^2\sigma_{i'}^2
 $$
-
-(the last equality just re-merges the diagonal and doubled off-diagonal pairs into one symmetric double sum, matching the code's loop structure).
-
-**Where did the 4th moment go?** It's still there, just absorbed into a coefficient rather than shown as a symbol. The diagonal term's prefactor is $a_{ii}^2 = \tfrac14\big(\partial^2T/\partial X_i^2\big)^2$, and for Gaussian $\Delta X_i$, $\mathrm{Var}[\Delta X_i^2] = 2\sigma_i^4$ (from $\mu_{4,i}=3\sigma_i^4$ above) — so the diagonal term is $\tfrac14\cdot 2\,\big(\partial^2T/\partial X_i^2\big)^2\sigma_i^4 = \tfrac12\big(\partial^2T/\partial X_i^2\big)^2\sigma_i^4$. That leading $\tfrac12$ happens to be *exactly* the coefficient the off-diagonal terms already carry from the (moment-free, independence-only) $4\sum_{i<i'}a_{ii'}^2\sigma_i^2\sigma_{i'}^2 = \sum_{i<i'}\big(\partial^2T/\partial X_i\partial X_{i'}\big)^2\sigma_i^2\sigma_{i'}^2$ derivation. That coincidence is what lets the diagonal and off-diagonal pieces merge into the single uniform double sum below — but only the diagonal piece secretly used Gaussianity to land on that coefficient; the off-diagonal one would have it regardless of distribution. If $\mu_{4,i}$ ever needed to be something other than $3\sigma_i^4$ (a non-Gaussian $\Delta X_i$), that $\tfrac12$ would stop matching and the merge into one double sum would no longer be valid — see the Notes below for the substitution.
 
 Putting it together:
 
 $$
-\boxed{\ \mathrm{Var}_{\mathbf{X}}[T](\Delta\theta) = \sum_i \left(\dfrac{\partial T}{\partial X_i}\bigg|_{\text{nom}} + \sum_j \dfrac{\partial^2 T}{\partial X_i\,\partial y_j}\bigg|_{\text{nom}}\,\Delta\theta_j\right)^{\!2}\sigma_i^2 \;+\; \frac12\sum_{i,i'} \left(\dfrac{\partial^2 T}{\partial X_i\,\partial X_{i'}}\bigg|_{\text{nom}}\right)^{\!2}\,\sigma_i^2\sigma_{i'}^2\ }
+\boxed{\ \mathrm{Var}_{\mathbf{X}}[T](\Delta\theta) = \sum_i \left(\dfrac{\partial T}{\partial X_i}\bigg|_{\text{nom}} + \sum_j \dfrac{\partial^2 T}{\partial X_i\,\partial y_j}\bigg|_{\text{nom}}\Delta\theta_j\right)^{\!2}\sigma_i^2 \;+\; \frac12\sum_{i,i'} \left(\dfrac{\partial^2 T}{\partial X_i\,\partial X_{i'}}\bigg|_{\text{nom}}\right)^{\!2}\sigma_i^2\sigma_{i'}^2\ }
 $$
 
-Written out term by term (no summation operators) — the square in each of the first four terms is left unexpanded, since expanding it would trade the $\sum_j$ nesting for 6 more cross-terms per variable (24 total) rather than removing terms:
+identical in form to the previous derivation's boxed result — but every
+$\sigma_{h_U}$ occurrence here is traceable to an explicit Case-3 substitution
+($\Delta X_{h_U}=\sigma_{h_U}Z_{h_U}$) carried through term by term, rather
+than asserted equivalent after the fact. $i=i'=h_U$ in the second sum gives
+$\tfrac12(\partial^2T/\partial h_U^2)^2\sigma_{h_U}^4$: since
+$\sigma_{h_U}\ge 0$ always, $\sigma_{h_U}^4=[\underline{\sigma_{h_U}}^4,\overline{\sigma_{h_U}}^4]$
+directly (monotonic on $\sigma_{h_U}\ge0$, no one-sided subtlety *at this
+term alone* — but seen together with every other term $\sigma_{h_U}$ appears
+in, the repeated-variable dependency-problem caveat below still applies).
+
+## Propagating the epistemic quantities: one-sided squares and the dependency problem
+
+$\mathbb{E}_{\mathbf X}[T](\Delta\theta)$ and $\mathrm{Var}_{\mathbf X}[T](\Delta\theta)$
+are closed-form polynomials in the four epistemic quantities
+$(\Delta T_\infty,\Delta T_W,\Delta b,\sigma_{h_U}^2)$ — interval arithmetic
+is applied to *those*, not to further sweeps of the physics model.
+
+- **Case 1's one-sided square** applies wherever a single $\Delta\theta_j$ (or
+  $\sigma_{h_U}$) is squared against itself: $\Delta\theta_j^2\in[0,r_j^2]$
+  and $\sigma_{h_U}^4\in[\underline{\sigma_{h_U}}^4,\overline{\sigma_{h_U}}^4]$
+  — an interval implementation must use a dedicated tight-square operation
+  (not generic interval multiplication, which would wrongly allow negative
+  values from $[-r_j,r_j]\times[-r_j,r_j]$'s lower-left/upper-right products).
+- **Dependency problem**: $\Delta\theta_j$ appears repeatedly (inside each
+  squared $\mathbb{E}[L^2]$ bracket, and again in the $y_j$–$y_{j'}$ Hessian
+  term), and $\sigma_{h_U}^2$ appears squared. Plain interval arithmetic
+  through repeated occurrences of the same variable is a valid but generally
+  conservative enclosure. Affine arithmetic or a Taylor-model remainder bound
+  would tighten this (as validated exact at 1st order in
+  `TSE_1st_order_bounds.py`); extending that to 2nd order remains future work.
+
+## Term count: how many terms, as a function of $d$, $p$, $n$
+
+Let $d = d_A + d_B$ be the total number of Taylor-expansion variables
+($d_A$ aleatory, $d_B$ deterministic-epistemic/Case 1 — here $d=7$,
+$d_A=4$, $d_B=3$), $n$ the TSE order ($n=2$ here), and $p\le d_A$ the number
+of aleatory variables whose distribution carries an epistemic-interval
+hyperparameter (Case 2, epistemic mean, or Case 3, epistemic scale — here
+$p=1$: only $\sigma_{h_U}$). A hyperparameter-flagged variable is still just
+one of the $d$ dimensions — $p$ does **not** add new Taylor-expansion
+dimensions of its own; it only labels which of the existing $d_A$ aleatory
+dimensions has an interval-valued (rather than crisp) second moment.
+
+### Raw Taylor polynomial (before taking $\mathbb{E}_Z[\cdot]$)
+
+The number of monomials of total degree $\le n$ in $d$ variables is the
+standard stars-and-bars count
 
 $$
-\mathrm{Var}_{\mathbf{X}}[T](\Delta\theta) = \left(\dfrac{\partial T}{\partial k}\bigg|_{\text{nom}} + \dfrac{\partial^2 T}{\partial k\,\partial T_\infty}\bigg|_{\text{nom}}\Delta T_\infty + \dfrac{\partial^2 T}{\partial k\,\partial T_W}\bigg|_{\text{nom}}\Delta T_W + \dfrac{\partial^2 T}{\partial k\,\partial b}\bigg|_{\text{nom}}\Delta b\right)^{\!2}\sigma_k^2
+N_{\text{raw}}(d,n) = \binom{d+n}{n}
+$$
+
+independent of $p$: the "General 2nd-order multivariate TSE" section above is
+built purely from $\Delta X_i,\Delta\theta_j$, and which variable's $\sigma$
+later turns out to be epistemic doesn't change how many monomials exist —
+only what gets substituted into $\Delta X_i$ afterward (Case 3:
+$\Delta X_i=\sigma_iZ_i$; precise baseline: same substitution, $\sigma_i$
+crisp). For $n=2$:
+
+$$
+N_{\text{raw}}(d,2) = \binom{d+2}{2} = \underbrace{1}_{\text{constant}} + \underbrace{d}_{\text{linear}} + \underbrace{d}_{\text{diagonal quadratic}} + \underbrace{\binom{d}{2}}_{\text{cross quadratic}}
+$$
+
+For $d=7$: $\binom{9}{2}=36 = 1+7+7+21$.
+
+### After taking $\mathbb{E}_Z[\cdot]$: term counts for $\mathbb{E}[T]$ and $\mathrm{Var}[T]$
+
+Integrating the aleatory randomness out (independence + zero third moment
+kills every term linear or cubic in a lone $\Delta X_i$; Gaussianity fixes
+the 4th moment) collapses the $N_{\text{raw}}(d,2)=36$ monomials down to the
+much smaller set that actually survives in the boxed formulas — counting the
+"written out term by term" blocks above directly:
+
+$$
+N_{\mathbb{E}[T]}(d_A,d_B) = \underbrace{1}_{T_0} + \underbrace{d_A}_{\frac12 H_{ii}\sigma_i^2} + \underbrace{d_B}_{\text{linear }\Delta\theta_j} + \underbrace{d_B}_{\text{diagonal }\Delta\theta_j^2} + \underbrace{\binom{d_B}{2}}_{\text{cross }\Delta\theta_j\Delta\theta_{j'}} = 1 + d_A + 2d_B + \binom{d_B}{2}
 $$
 
 $$
-+\; \left(\dfrac{\partial T}{\partial C_p}\bigg|_{\text{nom}} + \dfrac{\partial^2 T}{\partial C_p\,\partial T_\infty}\bigg|_{\text{nom}}\Delta T_\infty + \dfrac{\partial^2 T}{\partial C_p\,\partial T_W}\bigg|_{\text{nom}}\Delta T_W + \dfrac{\partial^2 T}{\partial C_p\,\partial b}\bigg|_{\text{nom}}\Delta b\right)^{\!2}\sigma_{C_p}^2
+N_{\mathrm{Var}[T]}(d_A) = \underbrace{d_A}_{\text{bracket}^2\text{ terms}} + \underbrace{d_A}_{\text{diagonal }H_{ii}^2\sigma_i^4} + \underbrace{\binom{d_A}{2}}_{\text{cross }H_{ii'}^2\sigma_i^2\sigma_{i'}^2} = 2d_A + \binom{d_A}{2}
 $$
 
-$$
-+\; \left(\dfrac{\partial T}{\partial \rho}\bigg|_{\text{nom}} + \dfrac{\partial^2 T}{\partial \rho\,\partial T_\infty}\bigg|_{\text{nom}}\Delta T_\infty + \dfrac{\partial^2 T}{\partial \rho\,\partial T_W}\bigg|_{\text{nom}}\Delta T_W + \dfrac{\partial^2 T}{\partial \rho\,\partial b}\bigg|_{\text{nom}}\Delta b\right)^{\!2}\sigma_\rho^2
-$$
+For $d_A=4,\ d_B=3$: $N_{\mathbb{E}[T]} = 1+4+6+3=14$ and
+$N_{\mathrm{Var}[T]} = 8+6=14$ — matching the two "written out" formulas
+above exactly (each has 14 terms).
 
-$$
-+\; \left(\dfrac{\partial T}{\partial h_U}\bigg|_{\text{nom}} + \dfrac{\partial^2 T}{\partial h_U\,\partial T_\infty}\bigg|_{\text{nom}}\Delta T_\infty + \dfrac{\partial^2 T}{\partial h_U\,\partial T_W}\bigg|_{\text{nom}}\Delta T_W + \dfrac{\partial^2 T}{\partial h_U\,\partial b}\bigg|_{\text{nom}}\Delta b\right)^{\!2}\sigma_{h_U}^2
-$$
+### Where $p$ actually enters: not the count, but which terms are interval-valued
 
-$$
-+\; \tfrac12\left(\dfrac{\partial^2 T}{\partial k^2}\bigg|_{\text{nom}}\right)^{\!2}\sigma_k^4 + \tfrac12\left(\dfrac{\partial^2 T}{\partial C_p^2}\bigg|_{\text{nom}}\right)^{\!2}\sigma_{C_p}^4 + \tfrac12\left(\dfrac{\partial^2 T}{\partial \rho^2}\bigg|_{\text{nom}}\right)^{\!2}\sigma_\rho^4 + \tfrac12\left(\dfrac{\partial^2 T}{\partial h_U^2}\bigg|_{\text{nom}}\right)^{\!2}\sigma_{h_U}^4
-$$
+$p$ leaves $N_{\mathbb{E}[T]}$ and $N_{\mathrm{Var}[T]}$ unchanged — the same
+terms exist whether or not any $\sigma_i$ happens to be epistemic. What $p$
+determines is how many of those terms carry an epistemic-interval
+coefficient rather than a crisp scalar one:
 
-$$
-+\; \left(\dfrac{\partial^2 T}{\partial k\,\partial C_p}\bigg|_{\text{nom}}\right)^{\!2}\sigma_k^2\sigma_{C_p}^2 + \left(\dfrac{\partial^2 T}{\partial k\,\partial \rho}\bigg|_{\text{nom}}\right)^{\!2}\sigma_k^2\sigma_\rho^2 + \left(\dfrac{\partial^2 T}{\partial k\,\partial h_U}\bigg|_{\text{nom}}\right)^{\!2}\sigma_k^2\sigma_{h_U}^2 + \left(\dfrac{\partial^2 T}{\partial C_p\,\partial \rho}\bigg|_{\text{nom}}\right)^{\!2}\sigma_{C_p}^2\sigma_\rho^2 + \left(\dfrac{\partial^2 T}{\partial C_p\,\partial h_U}\bigg|_{\text{nom}}\right)^{\!2}\sigma_{C_p}^2\sigma_{h_U}^2 + \left(\dfrac{\partial^2 T}{\partial \rho\,\partial h_U}\bigg|_{\text{nom}}\right)^{\!2}\sigma_\rho^2\sigma_{h_U}^2
-$$
+- In $\mathbb{E}[T]$: exactly $p$ of the $d_A$ variance-correction terms
+  $\tfrac12 H_{ii}\sigma_i^2$ are interval-valued (here: 1 of 4, $\sigma_{h_U}^2$).
+- In $\mathrm{Var}[T]$: $p$ of the $d_A$ bracket$^2$ terms, $p$ of the $d_A$
+  diagonal terms $H_{ii}^2\sigma_i^4$, and $\binom{d_A}{2}-\binom{d_A-p}{2}$
+  of the $\binom{d_A}{2}$ cross terms $H_{ii'}^2\sigma_i^2\sigma_{i'}^2$
+  (those touching at least one flagged variable) are interval-valued. For
+  $d_A=4,p=1$: $1$ bracket term, $1$ diagonal term, and
+  $\binom42-\binom32=6-3=3$ cross terms (matching $h_U$'s 3 cross-Hessian
+  terms with $k,C_p,\rho$ in the written-out formula) — 5 of the 14
+  $\mathrm{Var}[T]$ terms are interval-valued, the other 9 crisp.
 
-exactly the formula in `TSE_2nd_order_bounds.py`, now derived rather than asserted. It is **exact for the 2nd-order-truncated $T$** (no moment-matching approximation beyond Gaussianity of $\Delta X$) — any remaining error relative to the true $\mathrm{Var}[T]$ comes entirely from truncating $T$'s Taylor series at 2nd order, not from this derivation.
-
-Both sums are functions of $\Delta\theta$ alone (all aleatory randomness has been integrated out), with $\sigma_{h_U}^2$ appearing wherever $\sigma_i^2$ or $\sigma_{i'}^2$ takes $i=h_U$ — an epistemic interval sitting inside an otherwise-closed-form polynomial in $\Delta\theta$.
-
-## Propagating the epistemic quantities
-
-$\mathbb{E}_{\mathbf{X}}[T](\Delta\theta)$ and $\mathrm{Var}_{\mathbf{X}}[T](\Delta\theta)$ above are closed-form polynomials in the four epistemic quantities $(\Delta T_\infty, \Delta T_W, \Delta b, \sigma_{h_U}^2)$ — interval arithmetic is applied to *those*, not to further sweeps of the physics model (`TSE_2nd_order_bounds.py`).
-
-**Caveat (already noted in that script, confirmed here).** Unlike the 1st-order case — where each epistemic quantity appears exactly once, so interval arithmetic is exact — here $\Delta\theta_j$ appears repeatedly (linearly inside each squared $\mathbb{E}[L^2]$ term, and again inside the $\dfrac{\partial^2 T}{\partial y_j\,\partial y_{j'}}\bigg|_{\text{nom}}$ cross term) and $\sigma_{h_U}^2$ appears squared (the $i=i'=h_U$ term in $\mathbb{E}[Q^2]$). Plain interval arithmetic evaluated straightforwardly through repeated occurrences of the same variable is a valid but generally conservative enclosure (the "dependency problem"). This is the case where affine arithmetic or a rigorous Taylor-model remainder bound (the two methods validated as exact-reproductions of IA at 1st order in `TSE_1st_order_bounds.py`) would do real, non-cosmetic tightening — that extension to the 2nd-order script is future work, not yet built.
+Extending $N_{\mathbb{E}[T]}$/$N_{\mathrm{Var}[T]}$ to general order $n>2$
+would require the corresponding higher-order central moments (skewness,
+6th moment, ...) the way $\mathrm{Var}[Q^2]$ needed the 4th here — not
+derived in this note; see the Gaussianity note below.
 
 ## Notes
 
-- **Relation to the 1st-order expansion.** Setting $\dfrac{\partial^2 T}{\partial X_i\,\partial X_{i'}}\bigg|_{\text{nom}}=0$, $\dfrac{\partial^2 T}{\partial X_i\,\partial y_j}\bigg|_{\text{nom}}=0$, $\dfrac{\partial^2 T}{\partial y_j\,\partial y_{j'}}\bigg|_{\text{nom}}=0$ collapses both boxed formulas above exactly to the 1st-order note's $\mathbb{E}[T] = T_0 + \sum_j \dfrac{\partial T}{\partial y_j}\bigg|_{\text{nom}}\Delta\theta_j$ and $\mathrm{Var}[T] = \sum_i \left(\dfrac{\partial T}{\partial X_i}\bigg|_{\text{nom}}\right)^{\!2}\sigma_i^2$.
-- **Gaussianity is load-bearing exactly once.** Independence alone (no distributional assumption) gives $\mathbb{E}[L^2]$ and $\mathbb{E}[LQ]=0$. Only the *diagonal* piece of $\mathbb{E}[Q^2]$ needs a distributional assumption, and specifically needs $\mu_{4,i}=3\sigma_i^4$ (Gaussian excess kurtosis 0). If $k, C_p, \rho$, or $Z$ were ever changed to a non-Gaussian family, only that one coefficient (the $\tfrac12 \left(\dfrac{\partial^2 T}{\partial X_i^2}\bigg|_{\text{nom}}\right)^{\!2}\sigma_i^4$ terms, not the off-diagonal Hessian terms or the $\mathbb{E}[L^2]$ terms) would need the substitution $2\sigma_i^4 \to (\mu_{4,i}-\sigma_i^4)$.
-- **Cost.** The combined Hessian over all 7 variables ($k,C_p,\rho,h_U,T_\infty,T_W,b$) costs $1 + 2n + 4\binom{n}{2} = 99$ model evaluations for $n=7$, done once — no epistemic-grid sweep, as in `TSE_2nd_order_bounds.py`.
+- **Relation to the 1st-order expansion.** Zeroing every 2nd derivative
+  collapses both boxed formulas to the 1st-order note's
+  $\mathbb{E}[T]=T_0+\sum_j (\partial T/\partial y_j)\Delta\theta_j$ and
+  $\mathrm{Var}[T]=\sum_i(\partial T/\partial X_i)^2\sigma_i^2$ — consistent
+  with Case 1 alone (no quadratic epistemic term) and Case 3 alone (no mixed
+  correction $B_i$) both degenerating to their linear pieces.
+- **Gaussianity is load-bearing exactly once**: only the diagonal piece of
+  $\mathbb{E}[Q^2]$, same as before. This is unaffected by which variable's
+  $\sigma$ happens to be epistemic (Case 3) vs. crisp — Case 3 only makes the
+  *scale* an interval, not the *shape* of $Z_{h_U}$'s distribution.
+- **Cost.** Unchanged: the combined Hessian over all 7 variables
+  ($k,C_p,\rho,h_U,T_\infty,T_W,b$) costs $1+2n+4\binom n2=99$ model
+  evaluations for $n=7$, done once, no epistemic-grid sweep.

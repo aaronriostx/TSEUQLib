@@ -5,36 +5,21 @@ with the epistemic uncertainty (Tinf, Tw, b, STD_hU) propagated through that
 single expansion via interval arithmetic -- no re-evaluation of the model
 outside this one-time derivative computation.
 
-Split variables into aleatory A = {k, Cp, rho, hU} and epistemic B =
-{Tinf, Tw, b}. Writing Delta_x for aleatory deviations and Delta_theta for
-epistemic deviations about the nominal point, and taking the expectation
-E_x[.] over the aleatory randomness only (Delta_theta left symbolic):
+Implements E[T](Delta_theta) from TSE_2nd_order_derivation.md:
 
     E_x[T](Delta_theta) = [T0 + 0.5 sum_i H_ii sigma_i^2]
-                           + sum_i g_i Delta_theta_i
-                           + 0.5 sum_ij G_ij Delta_theta_i Delta_theta_j
+                           + sum_j g_j Delta_theta_j
+                           + 0.5 sum_jj' G_jj' Delta_theta_j Delta_theta_j'
 
-    Var_x[T](Delta_theta) = sum_i [f_i + sum_j C_ij Delta_theta_j]^2 sigma_i^2
-                             + 0.5 sum_ij H_ij^2 sigma_i^2 sigma_j^2
+where i ranges over the aleatory indices {k, Cp, rho, hU} (sigma_hU^2 an
+epistemic interval -- Case 3) and j, j' range over the epistemic indices
+{Tinf, Tw, b} (Case 1, including the one-sided Delta_theta_j^2 square).
 
-where f_i, H_ij are the aleatory-aleatory gradient/Hessian (as in
-TSE_2nd_order.py), g_i, G_ij are the epistemic-epistemic gradient/Hessian, and
-C_ij is the mixed aleatory-epistemic Hessian block. STD_hU folds in directly
-as an interval on sigma_hU^2 (it never appears as a model argument).
-
-These are now closed-form polynomials purely in the epistemic deviations
-Delta_theta and sigma_hU^2 -- interval arithmetic is applied to THOSE, not to
-sweeps of the physics model.
-
-Caveat: plain interval arithmetic is exact for affine combinations of
-independent intervals (the linear terms, and each squared linear bracket
-above), but summing several such exact-per-term quantities that share the
-same Delta_theta_i can still overestimate the true joint range (the
-"dependency problem"/wrapping effect) -- so these bounds are a valid but
-possibly conservative outer enclosure, not provably tight. Affine arithmetic
-or Taylor models would tighten this further.
+Var[T] is not yet built here -- this step is E[T] only (see
+TSE_2nd_order_derivation.md's Variance section for the formula to add next).
 """
 import os
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 import fin_problem as fp
@@ -71,8 +56,9 @@ class Interval:
     __rmul__ = __mul__
 
     def square(self):
-        """Tight range of x^2 for x in [lo, hi] (avoids the naive-multiply
-        dependency-problem blowup of treating x*x as two independent copies)."""
+        """Tight range of x^2 for x in [lo, hi] -- Case 1's one-sided square
+        (avoids the naive-multiply dependency-problem blowup of treating x*x
+        as two independent copies)."""
         lo2, hi2 = self.lo**2, self.hi**2
         contains_zero = (self.lo <= 0) & (self.hi >= 0)
         lower = np.where(contains_zero, 0.0, np.minimum(lo2, hi2))
@@ -102,6 +88,8 @@ def eval_T_z(z):
 
 
 # ── Gradient + Hessian of T(t), computed ONCE at z0 (no sweep) ──────────────
+tse_t0 = time.perf_counter()
+
 T_z0 = eval_T_z(z0)
 
 Zp = np.zeros((n, len(t)))
@@ -128,29 +116,29 @@ for i in range(n):
         Hess[i, j, :] = Hij
         Hess[j, i, :] = Hij
 
+tse_wall_time = time.perf_counter() - tse_t0
+
 n_evals = 1 + 2 * n + 4 * n * (n - 1) // 2
 print(f"Total model evaluations for the combined 2nd-order TSE: {n_evals} (no sweep)")
 
-f = grad[A]         # aleatory gradient, (4, len(t))
 g = grad[B]         # epistemic gradient, (3, len(t))
-H_AA = Hess[A, A]   # aleatory-aleatory Hessian, (4, 4, len(t))
 G_BB = Hess[B, B]   # epistemic-epistemic Hessian, (3, 3, len(t))
-C_AB = Hess[A, B]   # mixed Hessian, (4, 3, len(t))
 
-# ── Epistemic deviations as intervals (about the nominal point) ─────────────
+# ── Epistemic deviations as intervals (Case 1: Tinf, Tw, b) ─────────────────
 dTheta = [
     Interval(-(Tinf[1] - Tinf[0]) / 2, (Tinf[1] - Tinf[0]) / 2),
     Interval(-(Tw[1] - Tw[0]) / 2, (Tw[1] - Tw[0]) / 2),
     Interval(-(b[1] - b[0]) / 2, (b[1] - b[0]) / 2),
 ]
 
-sigma_hU_sq = Interval(STD_hU[0]**2, STD_hU[1]**2)  # STD_hU is itself epistemic
+# sigma_hU^2 (Case 3): substituted directly as its interval, exact, no split
+sigma_hU_sq = Interval(STD_hU[0]**2, STD_hU[1]**2)
 sigma_A_sq = [STD[0]**2, STD[1]**2, STD[2]**2, sigma_hU_sq]  # k, Cp, rho fixed; hU interval
 
 # ── E_x[T](Delta_theta): constant + linear + quadratic in Delta_theta ───────
 E_T_interval = Interval(T_z0, T_z0)
 for i in range(4):
-    E_T_interval = E_T_interval + 0.5 * H_AA[i, i] * sigma_A_sq[i]
+    E_T_interval = E_T_interval + 0.5 * Hess[i, i] * sigma_A_sq[i]
 
 for j in range(3):
     E_T_interval = E_T_interval + g[j] * dTheta[j]
@@ -160,42 +148,22 @@ for i in range(3):
         cross = dTheta[i].square() if i == j else (dTheta[i] * dTheta[j])
         E_T_interval = E_T_interval + 0.5 * G_BB[i, j] * cross
 
-# ── Var_x[T](Delta_theta): sum_i bracket_i^2 sigma_i^2 + aleatory quad term ──
-brackets = []
-for i in range(4):
-    br = Interval(f[i], f[i])
-    for j in range(3):
-        br = br + C_AB[i, j] * dTheta[j]
-    brackets.append(br)
-
-Var_T_interval = Interval(np.zeros_like(T_z0), np.zeros_like(T_z0))
-for i in range(4):
-    Var_T_interval = Var_T_interval + brackets[i].square() * sigma_A_sq[i]
-
-for i in range(4):
-    for j in range(4):
-        Var_T_interval = Var_T_interval + 0.5 * H_AA[i, j]**2 * sigma_A_sq[i] * sigma_A_sq[j]
-
 E_T_lower, E_T_upper = E_T_interval.lo, E_T_interval.hi
-Var_T_lower, Var_T_upper = Var_T_interval.lo, Var_T_interval.hi
 
 # ── MC bounds from double_loop_MCS_data.npz, for comparison only ────────────
 mc_data = np.load("double_loop_MCS_data.npz")
 T_mc = mc_data["T"]  # shape (num_outer, N_inner, len(t)), from the brute-force sweep
 T_mean_cond_mc = T_mc.mean(axis=1)
-T_var_cond_mc = T_mc.var(axis=1)
 E_T_lower_mc, E_T_upper_mc = T_mean_cond_mc.min(axis=0), T_mean_cond_mc.max(axis=0)
-Var_T_lower_mc, Var_T_upper_mc = T_var_cond_mc.min(axis=0), T_var_cond_mc.max(axis=0)
 
 E_T_mid, E_T_mid_mc = (E_T_lower + E_T_upper) / 2, (E_T_lower_mc + E_T_upper_mc) / 2
-Var_T_mid, Var_T_mid_mc = (Var_T_lower + Var_T_upper) / 2, (Var_T_lower_mc + Var_T_upper_mc) / 2
 
 # ── Plot: interval-arithmetic TSE bounds vs MC bounds (E[T]) ────────────────
 fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
 ax.fill_between(t, E_T_lower_mc, E_T_upper_mc, color="0.75", alpha=0.5,
                 zorder=1, label="MC bounds")
-ax.plot(t, E_T_lower, color="#0C447C", lw=1.8, zorder=2, label="TSE (interval) lower")
-ax.plot(t, E_T_upper, color="#185FA5", lw=1.8, zorder=2, label="TSE (interval) upper")
+ax.plot(t, E_T_lower, color="#0C447C", lw=1.8, zorder=2, label="TSE (2nd order) lower")
+ax.plot(t, E_T_upper, color="#185FA5", lw=1.8, zorder=2, label="TSE (2nd order) upper")
 ax.plot(t, E_T_mid, color="#A32D2D", lw=1.5, ls="--", zorder=3, label="TSE midpoint")
 ax.plot(t, E_T_mid_mc, color="0.35", lw=1.5, ls=":", zorder=3, label="MC midpoint")
 ax.set_xlabel("Time [s]")
@@ -206,24 +174,40 @@ fig.tight_layout()
 fig.savefig("figures/TSE_2nd_order_bounds_E_T_vs_t.png", transparent=True)
 plt.close(fig)
 
-# ── Plot: interval-arithmetic TSE bounds vs MC bounds (Var[T]) ──────────────
-fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
-ax.fill_between(t, Var_T_lower_mc, Var_T_upper_mc, color="0.75", alpha=0.5,
-                zorder=1, label="MC bounds")
-ax.plot(t, Var_T_lower, color="#0C447C", lw=1.8, zorder=2, label="TSE (interval) lower")
-ax.plot(t, Var_T_upper, color="#185FA5", lw=1.8, zorder=2, label="TSE (interval) upper")
-ax.plot(t, Var_T_mid, color="#A32D2D", lw=1.5, ls="--", zorder=3, label="TSE midpoint")
-ax.plot(t, Var_T_mid_mc, color="0.35", lw=1.5, ls=":", zorder=3, label="MC midpoint")
-ax.set_xlabel("Time [s]")
-ax.set_ylabel(r"$\mathrm{Var}[T]$ [K$^2$]")
-ax.grid(True, linestyle="--", alpha=0.4)
-ax.legend(fontsize=8)
-fig.tight_layout()
-fig.savefig("figures/TSE_2nd_order_bounds_Var_T_vs_t.png", transparent=True)
-plt.close(fig)
-
 print(f"\n{'':<20}{'TSE lower':>12}{'TSE upper':>12}{'MC lower':>12}{'MC upper':>12}")
 print(f"{'E[T] (t=450s)':<20}{E_T_lower[-1]:>12.4f}{E_T_upper[-1]:>12.4f}"
       f"{E_T_lower_mc[-1]:>12.4f}{E_T_upper_mc[-1]:>12.4f}")
-print(f"{'Var[T] (t=450s)':<20}{Var_T_lower[-1]:>12.4f}{Var_T_upper[-1]:>12.4f}"
-      f"{Var_T_lower_mc[-1]:>12.4f}{Var_T_upper_mc[-1]:>12.4f}")
+
+# ── Relative error of the TSE lower/midpoint/upper vs MC, at t=450s ─────────
+rel_err_lower = abs(E_T_lower[-1] - E_T_lower_mc[-1]) / abs(E_T_lower_mc[-1]) * 100
+rel_err_mid = abs(E_T_mid[-1] - E_T_mid_mc[-1]) / abs(E_T_mid_mc[-1]) * 100
+rel_err_upper = abs(E_T_upper[-1] - E_T_upper_mc[-1]) / abs(E_T_upper_mc[-1]) * 100
+
+print(f"\n{'':<12}{'TSE':>12}{'MC':>12}{'rel. error':>14}")
+print(f"{'Lower':<12}{E_T_lower[-1]:>12.4f}{E_T_lower_mc[-1]:>12.4f}{rel_err_lower:>13.4f}%")
+print(f"{'Midpoint':<12}{E_T_mid[-1]:>12.4f}{E_T_mid_mc[-1]:>12.4f}{rel_err_mid:>13.4f}%")
+print(f"{'Upper':<12}{E_T_upper[-1]:>12.4f}{E_T_upper_mc[-1]:>12.4f}{rel_err_upper:>13.4f}%")
+
+# ── Runtime: TSE (measured) vs double-loop MC (estimated) ──────────────────
+# double_loop_MCS_data.npz was generated once (~90s at this resolution), so
+# re-running it here just to time it isn't worth it -- instead benchmark the
+# per-call cost of the same analytic_solution() call both methods use, and
+# scale it up to the MC's actual evaluation count.
+n_mc_evals = T_mc.shape[0] * T_mc.shape[1]
+
+N_bench = 200
+bench_t0 = time.perf_counter()
+for _ in range(N_bench):
+    eval_T_z(z0)
+per_call_time = (time.perf_counter() - bench_t0) / N_bench
+mc_wall_time_est = per_call_time * n_mc_evals
+
+eval_ratio = n_evals / n_mc_evals
+time_ratio = tse_wall_time / mc_wall_time_est
+
+print(f"\n{'':<28}{'evaluations':>14}{'wall time':>14}")
+print(f"{'2nd-order TSE':<28}{n_evals:>14,}{tse_wall_time:>13.4f}s")
+print(f"{'Double-loop MC (est.)':<28}{n_mc_evals:>14,}{mc_wall_time_est:>13.4f}s")
+print(f"\nTSE relative to double-loop MC:")
+print(f"  evaluations ratio: {eval_ratio:.2e}  ({1/eval_ratio:,.0f}x fewer)")
+print(f"  wall-time ratio:   {time_ratio*100:.4f}%  ({1/time_ratio:,.0f}x less, estimated)")
