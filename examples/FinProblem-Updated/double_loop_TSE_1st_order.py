@@ -50,7 +50,7 @@ M_grid = 4
 Tinf_vals = np.linspace(Tinf[0], Tinf[1], M_grid)
 Tw_vals = np.linspace(Tw[0], Tw[1], M_grid)
 b_vals = np.linspace(b[0], b[1], M_grid)
-STD_hU_vals = 10*np.linspace(STD_hU[0], STD_hU[1], M_grid)
+STD_hU_vals = np.linspace(STD_hU[0], STD_hU[1], M_grid)
 
 # Small test, fixing STD_hU to midpoint.
 # midpoint_STD_hU = (STD_hU[0] + STD_hU[1])/2
