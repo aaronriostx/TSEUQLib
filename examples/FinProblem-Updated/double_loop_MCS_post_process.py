@@ -26,9 +26,9 @@ for m in range(num_outer):
 
 ax.fill_between(t, T_lower, T_upper, color="#185FA5", alpha=0.18, zorder=2,
                  label=r"Bounds on $\mathbb{E}[T]$")
-ax.plot(t, T_lower, color="#0C447C", lw=2.0, zorder=3, label="Lower bound")
-ax.plot(t, T_upper, color="#185FA5", lw=2.0, zorder=3, label="Upper bound")
-ax.plot(t, T_mid, color="#A32D2D", lw=1.5, ls="--", zorder=4, label="Midpoint")
+ax.plot(t, T_lower, color="#0C447C", lw=2.0, zorder=3, label="DLMC lower")
+ax.plot(t, T_upper, color="#185FA5", lw=2.0, zorder=3, label="DLMC upper")
+ax.plot(t, T_mid, color="#A32D2D", lw=1.5, ls="--", zorder=4, label="DLMC midpoint")
 
 ax.set_xlabel("Time [s]")
 ax.set_ylabel(r"$\mathbb{E}[T]$ [K]")
@@ -54,9 +54,9 @@ for m in range(num_outer):
 
 ax.fill_between(t, Tvar_lower, Tvar_upper, color="#185FA5", alpha=0.18, zorder=2,
                  label=r"Bounds on $\mathrm{Var}[T]$")
-ax.plot(t, Tvar_lower, color="#0C447C", lw=2.0, zorder=3, label="Lower bound")
-ax.plot(t, Tvar_upper, color="#185FA5", lw=2.0, zorder=3, label="Upper bound")
-ax.plot(t, Tvar_mid, color="#A32D2D", lw=1.5, ls="--", zorder=4, label="Midpoint")
+ax.plot(t, Tvar_lower, color="#0C447C", lw=2.0, zorder=3, label="DLMC lower")
+ax.plot(t, Tvar_upper, color="#185FA5", lw=2.0, zorder=3, label="DLMC upper")
+ax.plot(t, Tvar_mid, color="#A32D2D", lw=1.5, ls="--", zorder=4, label="DLMC midpoint")
 
 ax.set_xlabel("Time [s]")
 ax.set_ylabel(r"$\mathrm{Var}[T]$ [K$^2$]")

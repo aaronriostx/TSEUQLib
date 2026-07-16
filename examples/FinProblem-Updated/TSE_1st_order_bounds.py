@@ -217,11 +217,11 @@ plt.close(fig)
 def save_bound_plot(lower, upper, ylabel, method_label, fname, lo_mc, hi_mc, mid_mc):
     mid = (lower + upper) / 2
     fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
-    ax.fill_between(t, lo_mc, hi_mc, color="0.75", alpha=0.5, zorder=1, label="MC bounds")
+    ax.fill_between(t, lo_mc, hi_mc, color="0.75", alpha=0.5, zorder=1, label="DLMC bounds")
     ax.plot(t, lower, color="#0C447C", lw=1.8, zorder=2, label=f"TSE ({method_label}) lower")
     ax.plot(t, upper, color="#185FA5", lw=1.8, zorder=2, label=f"TSE ({method_label}) upper")
     ax.plot(t, mid, color="#A32D2D", lw=1.5, ls="--", zorder=3, label="TSE midpoint")
-    ax.plot(t, mid_mc, color="0.35", lw=1.5, ls=":", zorder=3, label="MC midpoint")
+    ax.plot(t, mid_mc, color="0.35", lw=1.5, ls=":", zorder=3, label="DLMC midpoint")
     ax.set_xlabel("Time [s]")
     ax.set_ylabel(ylabel)
     ax.grid(True, linestyle="--", alpha=0.4)
@@ -242,11 +242,11 @@ save_bound_plot(E_T_tm_lower, E_T_tm_upper, r"$\mathbb{E}[T]$ [K]", "Taylor mode
 # ── Plot: 1st-order TSE bounds vs MC bounds (Var[T]) ─────────────────────────
 fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
 ax.fill_between(t, Var_T_lower_mc, Var_T_upper_mc, color="0.75", alpha=0.5,
-                zorder=1, label="MC bounds")
+                zorder=1, label="DLMC bounds")
 ax.plot(t, Var_T_lower, color="#0C447C", lw=1.8, zorder=2, label="TSE (1st order) lower")
 ax.plot(t, Var_T_upper, color="#185FA5", lw=1.8, zorder=2, label="TSE (1st order) upper")
 ax.plot(t, Var_T_mid, color="#A32D2D", lw=1.5, ls="--", zorder=3, label="TSE midpoint")
-ax.plot(t, Var_T_mid_mc, color="0.35", lw=1.5, ls=":", zorder=3, label="MC midpoint")
+ax.plot(t, Var_T_mid_mc, color="0.35", lw=1.5, ls=":", zorder=3, label="DLMC midpoint")
 ax.set_xlabel("Time [s]")
 ax.set_ylabel(r"$\mathrm{Var}[T]$ [K$^2$]")
 ax.grid(True, linestyle="--", alpha=0.4)
@@ -305,11 +305,11 @@ print(f"\nSingle-expansion IA: {n_tse_evals} evaluations (no sweep) "
 def save_dlt_comparison_plot(lower, upper, mid, lower_dlt, upper_dlt, mid_dlt, ylabel, fname):
     fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
     ax.fill_between(t, lower_dlt, upper_dlt, color="0.75", alpha=0.5,
-                     zorder=1, label="Double loop TSE bounds")
+                     zorder=1, label="DLTSE bounds")
     ax.plot(t, lower, color="#0C447C", lw=1.8, zorder=2, label="TSE (1st order, IA) lower")
     ax.plot(t, upper, color="#185FA5", lw=1.8, zorder=2, label="TSE (1st order, IA) upper")
     ax.plot(t, mid, color="#A32D2D", lw=1.5, ls="--", zorder=3, label="TSE midpoint")
-    ax.plot(t, mid_dlt, color="0.35", lw=1.5, ls=":", zorder=3, label="Double loop TSE midpoint")
+    ax.plot(t, mid_dlt, color="0.35", lw=1.5, ls=":", zorder=3, label="DLTSE midpoint")
     ax.set_xlabel("Time [s]")
     ax.set_ylabel(ylabel)
     ax.grid(True, linestyle="--", alpha=0.4)
@@ -327,7 +327,7 @@ save_dlt_comparison_plot(E_T_lower, E_T_upper, E_T_mid, E_T_lower_dlt, E_T_upper
 save_dlt_comparison_plot(Var_T_lower, Var_T_upper, Var_T_mid, Var_T_lower_dlt, Var_T_upper_dlt, Var_T_mid_dlt,
                           r"$\mathrm{Var}[T]$ [K$^2$]", "TSE_1st_order_bounds_vs_double_loop_TSE_Var_T_vs_t.png")
 
-print(f"\n{'':<20}{'IA lower':>12}{'IA upper':>12}{'DL-TSE lower':>14}{'DL-TSE upper':>14}")
+print(f"\n{'':<20}{'IA lower':>12}{'IA upper':>12}{'DLTSE lower':>14}{'DLTSE upper':>14}")
 print(f"{'E[T] (t=450s)':<20}{E_T_lower[-1]:>12.4f}{E_T_upper[-1]:>12.4f}"
       f"{E_T_lower_dlt[-1]:>14.4f}{E_T_upper_dlt[-1]:>14.4f}")
 print(f"{'Var[T] (t=450s)':<20}{Var_T_lower[-1]:>12.4f}{Var_T_upper[-1]:>12.4f}"
