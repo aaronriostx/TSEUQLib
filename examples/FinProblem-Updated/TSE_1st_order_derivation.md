@@ -174,6 +174,51 @@ At any *fixed* $\sigma_{h_U}^2$, $\sum_i S_i = 1$ exactly, since $\sum_i V_i = \
 
 $T_\infty, T_W, b$ don't appear anywhere in this decomposition: since they don't affect $\mathrm{Var}[T]$ at 1st order at all, their implied main-effect variance is exactly zero at this order — any nonzero sensitivity for them only appears once curvature (2nd order) is included.
 
+## Validation against the double-loop TSE: why $\mathbb{E}[T]$ matches but $\mathrm{Var}[T]$ does not
+
+`double_loop_TSE_1st_order.py` builds a genuinely different object than the closed-form IA bounds above: at each point $\mathbf{y}$ on an explicit outer grid, it re-evaluates the aleatory gradient $f_i(\mathbf{y}) = \partial T/\partial X_i\big|_{(\boldsymbol\mu_X,\mathbf{y})}$ via fresh finite differences of the true model, rather than linearizing $f_i$'s dependence on $\mathbf{y}$ the way the single-expansion IA construction above does (which freezes $f_i$ at $\mathbf{y}_0$ and only lets $\mathbf{y}$ enter through the separately-computed epistemic gradient $g_j$). Comparing the two (the comparison appended to `TSE_1st_order_bounds.py` against `double_loop_TSE_1st_order_data.npz`) shows the $\mathbb{E}[T](\tau)$ bounds agree closely, while the $\mathrm{Var}[T](\tau)$ bounds diverge substantially. This isn't numerical noise — it follows from an exact structural fact about this model.
+
+### $T$ is exactly affine in $(T_\infty, T_W)$
+
+Since $T_0 = T_\infty$ by assumption, $\theta_0 = (T_0-T_\infty)/(T_W-T_\infty) \equiv 0$, so **$\theta$ has no dependence on $T_\infty$ or $T_W$ at all** — only on the "shape" variables $(b, k, C_p, \rho, h_U)$. The dimensional temperature is then
+
+$$
+T(\mathbf{X}, \mathbf{y}) = \theta(\mathbf{X}, b) \cdot (T_W - T_\infty) + T_\infty
+$$
+
+which is an **exact** affine function of $(T_\infty, T_W)$ for any fixed $(\mathbf{X}, b)$:
+
+$$
+\frac{\partial T}{\partial T_\infty} = 1-\theta, \qquad \frac{\partial T}{\partial T_W} = \theta, \qquad \frac{\partial^2 T}{\partial T_\infty^2}=\frac{\partial^2 T}{\partial T_W^2}=\frac{\partial^2 T}{\partial T_\infty \partial T_W}=0
+$$
+
+So the 1st-order truncation in the $(T_\infty, T_W)$ directions carries **zero truncation error** — a linear expansion is already exact there (up to the mild curvature $b$ introduces through $\theta$, and $b$'s interval is narrow, $\pm 1\%$). This is exactly why $T_0(\mathbf{y})$ — and hence $\mathbb{E}[T\mid\mathbf{y}]$ — from the swept double-loop construction lines up so well with the single-expansion IA bounds: both are approximating a function that's (almost) genuinely linear in the two widest epistemic directions.
+
+### But $f_{h_U}$ inherits that same $(T_W-T_\infty)$ factor — squared
+
+The affine identity above has a second consequence: differentiating it with respect to $h_U$ (which only enters through $\theta$),
+
+$$
+f_{h_U}(\mathbf{y}) \;=\; \frac{\partial T}{\partial h_U}\bigg|_{(\boldsymbol\mu_X,\mathbf{y})} \;=\; (T_W-T_\infty)\cdot\frac{\partial \theta}{\partial h_U}(\boldsymbol\mu_X, b)
+$$
+
+so $f_{h_U}$ scales **linearly** with the interval width $(T_W-T_\infty)$, which itself ranges over roughly $[86, 126]$ across the epistemic box (vs. $\approx 106$ at the midpoint) — confirmed numerically against the finite-difference gradient at all 8 box corners, where $f_{h_U}$ swings from about $-43$ to $-67$ (a $\sim\!40\%$ range around its midpoint value of $\approx-55$). The 1st-order variance term $f_{h_U}^2\,\sigma_{h_U}^2$ therefore scales **quadratically** in $(T_W-T_\infty)$ — genuine curvature that a linear-in-$\mathbf{y}$ expansion cannot see. Equivalently, this is precisely the mixed partial
+
+$$
+C_{h_U,\,T_\infty} = \frac{\partial^2 T}{\partial h_U\,\partial T_\infty} = -\frac{\partial\theta}{\partial h_U}, \qquad C_{h_U,\,T_W} = \frac{\partial^2 T}{\partial h_U\,\partial T_W} = +\frac{\partial\theta}{\partial h_U}
+$$
+
+from the combined 2nd-order expansion in `TSE_2nd_order_bounds.py` / `THERMAL-FIN-MODEL-DESCRIPTION.md` — nonzero here, and exactly the term that lets the aleatory gradient (and hence $\mathrm{Var}[T]$) pick up epistemic width beyond what $\sigma_{h_U}^2$'s own interval contributes.
+
+### Summary
+
+| | Exact behavior in $(T_\infty, T_W)$ | Captured by 1st-order (IA)? |
+|---|---|---|
+| $T_0(\mathbf{y})$, hence $\mathbb{E}[T\mid\mathbf{y}]$ | exactly affine | yes — no truncation error |
+| $f_{h_U}(\mathbf{y})$, hence $\mathrm{Var}[T\mid\mathbf{y}]$ | affine in $f_{h_U}$, but **quadratic** in $f_{h_U}^2$ | no — needs the $C_{ij}$ mixed-Hessian term |
+
+This is why `TSE_1st_order_bounds.py`'s $\mathbb{E}[T]$ bounds track the double-loop TSE's swept bounds closely, while its $\mathrm{Var}[T]$ bounds are systematically narrower (missing the extra widening from $f_{h_U}(\mathbf{y})^2$ growing with $(T_W-T_\infty)^2$) — a gap that only closes once the $C$ (mixed aleatory-epistemic Hessian) term is included, as it already is in `TSE_2nd_order_bounds.py`.
+
 ## Notes
 
 - **$T_\infty$ is a total derivative.** $T_\infty$ appears twice in `analytic_solution` (the explicit `Tinf` argument and `T0 = Tinf`), so $\partial T/\partial T_\infty$ must be computed by perturbing both occurrences together — exactly as `TSE_mixed.py` already does.

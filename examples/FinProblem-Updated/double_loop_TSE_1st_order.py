@@ -46,11 +46,15 @@ def eval_T_X(x_vec, y_vec):
 
 
 # ── Outer loop: same epistemic grid as double_loop_MCS_generate_data.py ─────
-M_grid = 10
+M_grid = 4
 Tinf_vals = np.linspace(Tinf[0], Tinf[1], M_grid)
 Tw_vals = np.linspace(Tw[0], Tw[1], M_grid)
 b_vals = np.linspace(b[0], b[1], M_grid)
-STD_hU_vals = np.linspace(STD_hU[0], STD_hU[1], M_grid)
+STD_hU_vals = 10*np.linspace(STD_hU[0], STD_hU[1], M_grid)
+
+# Small test, fixing STD_hU to midpoint.
+# midpoint_STD_hU = (STD_hU[0] + STD_hU[1])/2
+# STD_hU_vals = midpoint_STD_hU*np.ones(M_grid)
 
 EE = [(Tinf_v, Tw_v, b_v, stdhU_v)
       for Tinf_v in Tinf_vals

@@ -282,3 +282,53 @@ print(f"{'Var[T] (t=450s)':<28}"
 assert np.allclose(E_T_lower, E_T_aa_lower) and np.allclose(E_T_upper, E_T_aa_upper)
 assert np.allclose(Var_T_lower, Var_T_aa_lower) and np.allclose(Var_T_upper, Var_T_aa_upper)
 print("\nIA, AA, and TM bounds agree exactly (as expected -- E[T]/Var[T] are affine here).")
+
+# ── DL-TSE bounds from double_loop_TSE_1st_order_data.npz, for comparison ───
+# This is the OTHER 1st-order TSE hybrid: no closed-form epistemic
+# propagation, but a re-derived aleatory gradient f_i(y) swept explicitly
+# over the outer epistemic grid (see double_loop_TSE_1st_order.py). Compared
+# here against the single-expansion IA bounds above, built at the midpoint
+# with y linearized via interval arithmetic instead of swept.
+dlt_data = np.load("double_loop_TSE_1st_order_data.npz")
+T_mean_cond_dlt = dlt_data["T_mean_cond"]
+T_var_cond_dlt = dlt_data["T_var_cond"]
+n_dlt_evals = int(dlt_data["n_tse_evals"])
+E_T_lower_dlt, E_T_upper_dlt = T_mean_cond_dlt.min(axis=0), T_mean_cond_dlt.max(axis=0)
+Var_T_lower_dlt, Var_T_upper_dlt = T_var_cond_dlt.min(axis=0), T_var_cond_dlt.max(axis=0)
+E_T_mid_dlt = (E_T_lower_dlt + E_T_upper_dlt) / 2
+Var_T_mid_dlt = (Var_T_lower_dlt + Var_T_upper_dlt) / 2
+
+print(f"\nSingle-expansion IA: {n_tse_evals} evaluations (no sweep) "
+      f"vs. double-loop TSE: {n_dlt_evals:,} evaluations ({dlt_data['EE'].shape[0]:,} outer points)")
+
+
+def save_dlt_comparison_plot(lower, upper, mid, lower_dlt, upper_dlt, mid_dlt, ylabel, fname):
+    fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
+    ax.fill_between(t, lower_dlt, upper_dlt, color="0.75", alpha=0.5,
+                     zorder=1, label="Double loop TSE bounds")
+    ax.plot(t, lower, color="#0C447C", lw=1.8, zorder=2, label="TSE (1st order, IA) lower")
+    ax.plot(t, upper, color="#185FA5", lw=1.8, zorder=2, label="TSE (1st order, IA) upper")
+    ax.plot(t, mid, color="#A32D2D", lw=1.5, ls="--", zorder=3, label="TSE midpoint")
+    ax.plot(t, mid_dlt, color="0.35", lw=1.5, ls=":", zorder=3, label="Double loop TSE midpoint")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel(ylabel)
+    ax.grid(True, linestyle="--", alpha=0.4)
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(f"figures/{fname}", transparent=True)
+    plt.close(fig)
+
+
+# ── Plot: 1st-order TSE (IA) bounds vs double-loop TSE bounds (E[T]) ────────
+save_dlt_comparison_plot(E_T_lower, E_T_upper, E_T_mid, E_T_lower_dlt, E_T_upper_dlt, E_T_mid_dlt,
+                          r"$\mathbb{E}[T]$ [K]", "TSE_1st_order_bounds_vs_double_loop_TSE_E_T_vs_t.png")
+
+# ── Plot: 1st-order TSE (IA) bounds vs double-loop TSE bounds (Var[T]) ──────
+save_dlt_comparison_plot(Var_T_lower, Var_T_upper, Var_T_mid, Var_T_lower_dlt, Var_T_upper_dlt, Var_T_mid_dlt,
+                          r"$\mathrm{Var}[T]$ [K$^2$]", "TSE_1st_order_bounds_vs_double_loop_TSE_Var_T_vs_t.png")
+
+print(f"\n{'':<20}{'IA lower':>12}{'IA upper':>12}{'DL-TSE lower':>14}{'DL-TSE upper':>14}")
+print(f"{'E[T] (t=450s)':<20}{E_T_lower[-1]:>12.4f}{E_T_upper[-1]:>12.4f}"
+      f"{E_T_lower_dlt[-1]:>14.4f}{E_T_upper_dlt[-1]:>14.4f}")
+print(f"{'Var[T] (t=450s)':<20}{Var_T_lower[-1]:>12.4f}{Var_T_upper[-1]:>12.4f}"
+      f"{Var_T_lower_dlt[-1]:>14.4f}{Var_T_upper_dlt[-1]:>14.4f}")
