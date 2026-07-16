@@ -15,8 +15,26 @@ where i ranges over the aleatory indices {k, Cp, rho, hU} (sigma_hU^2 an
 epistemic interval -- Case 3) and j, j' range over the epistemic indices
 {Tinf, Tw, b} (Case 1, including the one-sided Delta_theta_j^2 square).
 
-Var[T] is not yet built here -- this step is E[T] only (see
-TSE_2nd_order_derivation.md's Variance section for the formula to add next).
+Also implements Var[T] from TSE_2nd_order_derivation.md's boxed Variance
+result:
+
+    Var_X[T](Delta_theta) = sum_i ( f_i + sum_j C_ij Delta_theta_j )^2 sigma_i^2
+                             + 0.5 sum_i sum_i' H_ii'^2 sigma_i^2 sigma_i'^2
+
+where f_i = dT/dX_i, C_ij = d^2T/dX_i dy_j (mixed aleatory-epistemic
+Hessian), H_ii' = d^2T/dX_i dX_i' (aleatory-aleatory Hessian), all at the
+nominal point; sigma_i^2 is the epistemic interval [sigma_hU_lo^2,
+sigma_hU_hi^2] at i=hU (Case 3) and crisp otherwise. The bracket is squared
+with the dedicated one-sided Interval.square() (it's a single affine
+combination of independent Delta_theta_j's, so this is exact); sigma_hU^4 is
+likewise squared via Interval.square() rather than Interval*Interval, to
+avoid the repeated-variable dependency problem.
+
+Both E[T] and Var[T] bounds are checked against two references: the
+brute-force double-loop MC sweep in double_loop_MCS_data.npz, and the
+double-loop TSE hybrid (1st-order-in-X gradient re-evaluated at every outer
+epistemic grid point, see double_loop_TSE_1st_order.py) in
+double_loop_TSE_1st_order_data.npz.
 """
 import os
 import time
@@ -150,13 +168,45 @@ for i in range(3):
 
 E_T_lower, E_T_upper = E_T_interval.lo, E_T_interval.hi
 
+# ── Var_X[T](Delta_theta): bracket^2 term + aleatory-aleatory Hessian term ──
+f = grad[A]      # aleatory gradient, (4, len(t))
+C = Hess[A, B]    # mixed aleatory-epistemic Hessian, (4, 3, len(t))
+H_AA = Hess[A, A]  # aleatory-aleatory Hessian, (4, 4, len(t))
+
+
+def sq_sigma_product(i, ip):
+    """sigma_i^2 * sigma_i'^2, using the tight one-sided square when i==i'
+    and sigma_i^2 is itself an epistemic interval (avoids treating the two
+    occurrences of sigma_hU^2 as independent)."""
+    si, sip = sigma_A_sq[i], sigma_A_sq[ip]
+    if i == ip:
+        return si.square() if isinstance(si, Interval) else si**2
+    return si * sip
+
+
+Var_T_interval = Interval(np.zeros_like(t), np.zeros_like(t))
+for i in range(4):
+    bracket = Interval(f[i], f[i])
+    for j in range(3):
+        bracket = bracket + C[i, j] * dTheta[j]
+    Var_T_interval = Var_T_interval + bracket.square() * sigma_A_sq[i]
+
+for i in range(4):
+    for ip in range(4):
+        Var_T_interval = Var_T_interval + 0.5 * (H_AA[i, ip]**2) * sq_sigma_product(i, ip)
+
+Var_T_lower, Var_T_upper = Var_T_interval.lo, Var_T_interval.hi
+
 # ── MC bounds from double_loop_MCS_data.npz, for comparison only ────────────
 mc_data = np.load("double_loop_MCS_data.npz")
 T_mc = mc_data["T"]  # shape (num_outer, N_inner, len(t)), from the brute-force sweep
 T_mean_cond_mc = T_mc.mean(axis=1)
+T_var_cond_mc = T_mc.var(axis=1)
 E_T_lower_mc, E_T_upper_mc = T_mean_cond_mc.min(axis=0), T_mean_cond_mc.max(axis=0)
+Var_T_lower_mc, Var_T_upper_mc = T_var_cond_mc.min(axis=0), T_var_cond_mc.max(axis=0)
 
 E_T_mid, E_T_mid_mc = (E_T_lower + E_T_upper) / 2, (E_T_lower_mc + E_T_upper_mc) / 2
+Var_T_mid, Var_T_mid_mc = (Var_T_lower + Var_T_upper) / 2, (Var_T_lower_mc + Var_T_upper_mc) / 2
 
 # ── Plot: interval-arithmetic TSE bounds vs MC bounds (E[T]) ────────────────
 fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
@@ -187,6 +237,89 @@ print(f"\n{'':<12}{'TSE':>12}{'MC':>12}{'rel. error':>14}")
 print(f"{'Lower':<12}{E_T_lower[-1]:>12.4f}{E_T_lower_mc[-1]:>12.4f}{rel_err_lower:>13.4f}%")
 print(f"{'Midpoint':<12}{E_T_mid[-1]:>12.4f}{E_T_mid_mc[-1]:>12.4f}{rel_err_mid:>13.4f}%")
 print(f"{'Upper':<12}{E_T_upper[-1]:>12.4f}{E_T_upper_mc[-1]:>12.4f}{rel_err_upper:>13.4f}%")
+
+# ── Plot: interval-arithmetic TSE bounds vs MC bounds (Var[T]) ──────────────
+fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
+ax.fill_between(t, Var_T_lower_mc, Var_T_upper_mc, color="0.75", alpha=0.5,
+                zorder=1, label="MC bounds")
+ax.plot(t, Var_T_lower, color="#0C447C", lw=1.8, zorder=2, label="TSE (2nd order) lower")
+ax.plot(t, Var_T_upper, color="#185FA5", lw=1.8, zorder=2, label="TSE (2nd order) upper")
+ax.plot(t, Var_T_mid, color="#A32D2D", lw=1.5, ls="--", zorder=3, label="TSE midpoint")
+ax.plot(t, Var_T_mid_mc, color="0.35", lw=1.5, ls=":", zorder=3, label="MC midpoint")
+ax.set_xlabel("Time [s]")
+ax.set_ylabel(r"$\mathrm{Var}[T]$ [K$^2$]")
+ax.grid(True, linestyle="--", alpha=0.4)
+ax.legend(fontsize=8)
+fig.tight_layout()
+fig.savefig("figures/TSE_2nd_order_bounds_Var_T_vs_t.png", transparent=True)
+plt.close(fig)
+
+print(f"\n{'':<20}{'TSE lower':>12}{'TSE upper':>12}{'MC lower':>12}{'MC upper':>12}")
+print(f"{'Var[T] (t=450s)':<20}{Var_T_lower[-1]:>12.4f}{Var_T_upper[-1]:>12.4f}"
+      f"{Var_T_lower_mc[-1]:>12.4f}{Var_T_upper_mc[-1]:>12.4f}")
+
+# ── Relative error of the TSE lower/midpoint/upper vs MC, at t=450s ─────────
+var_rel_err_lower = abs(Var_T_lower[-1] - Var_T_lower_mc[-1]) / abs(Var_T_lower_mc[-1]) * 100
+var_rel_err_mid = abs(Var_T_mid[-1] - Var_T_mid_mc[-1]) / abs(Var_T_mid_mc[-1]) * 100
+var_rel_err_upper = abs(Var_T_upper[-1] - Var_T_upper_mc[-1]) / abs(Var_T_upper_mc[-1]) * 100
+
+print(f"\n{'':<12}{'TSE':>12}{'MC':>12}{'rel. error':>14}")
+print(f"{'Lower':<12}{Var_T_lower[-1]:>12.4f}{Var_T_lower_mc[-1]:>12.4f}{var_rel_err_lower:>13.4f}%")
+print(f"{'Midpoint':<12}{Var_T_mid[-1]:>12.4f}{Var_T_mid_mc[-1]:>12.4f}{var_rel_err_mid:>13.4f}%")
+print(f"{'Upper':<12}{Var_T_upper[-1]:>12.4f}{Var_T_upper_mc[-1]:>12.4f}{var_rel_err_upper:>13.4f}%")
+
+# ── DL-TSE bounds from double_loop_TSE_1st_order_data.npz, for comparison ───
+# The double-loop TSE hybrid (double_loop_TSE_1st_order.py) re-evaluates the
+# 1st-order aleatory gradient f_i(y) exactly at every outer epistemic grid
+# point instead of linearizing its y-dependence -- i.e. it implicitly
+# captures the full C_ij mixed-Hessian coupling this 2nd-order expansion
+# only linearizes. Comparing against it (rather than only the brute-force
+# double-loop MC) isolates how much of that coupling the mixed Hessian
+# term recovers, independent of the remaining aleatory-truncation gap that
+# also separates both TSE methods from the MC ground truth.
+dlt_data = np.load("double_loop_TSE_1st_order_data.npz")
+T_mean_cond_dlt = dlt_data["T_mean_cond"]
+T_var_cond_dlt = dlt_data["T_var_cond"]
+n_dlt_evals = int(dlt_data["n_tse_evals"])
+E_T_lower_dlt, E_T_upper_dlt = T_mean_cond_dlt.min(axis=0), T_mean_cond_dlt.max(axis=0)
+Var_T_lower_dlt, Var_T_upper_dlt = T_var_cond_dlt.min(axis=0), T_var_cond_dlt.max(axis=0)
+E_T_mid_dlt = (E_T_lower_dlt + E_T_upper_dlt) / 2
+Var_T_mid_dlt = (Var_T_lower_dlt + Var_T_upper_dlt) / 2
+
+print(f"\nCombined 2nd-order TSE: {n_evals} evaluations (no sweep) "
+      f"vs. double-loop TSE: {n_dlt_evals:,} evaluations ({dlt_data['EE'].shape[0]:,} outer points)")
+
+
+def save_dlt_comparison_plot(lower, upper, mid, lower_dlt, upper_dlt, mid_dlt, ylabel, fname):
+    fig, ax = plt.subplots(figsize=(4, 4), dpi=300)
+    ax.fill_between(t, lower_dlt, upper_dlt, color="0.75", alpha=0.5,
+                     zorder=1, label="Double loop TSE bounds")
+    ax.plot(t, lower, color="#0C447C", lw=1.8, zorder=2, label="TSE (2nd order) lower")
+    ax.plot(t, upper, color="#185FA5", lw=1.8, zorder=2, label="TSE (2nd order) upper")
+    ax.plot(t, mid, color="#A32D2D", lw=1.5, ls="--", zorder=3, label="TSE midpoint")
+    ax.plot(t, mid_dlt, color="0.35", lw=1.5, ls=":", zorder=3, label="Double loop TSE midpoint")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel(ylabel)
+    ax.grid(True, linestyle="--", alpha=0.4)
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(f"figures/{fname}", transparent=True)
+    plt.close(fig)
+
+
+# ── Plot: 2nd-order TSE bounds vs double-loop TSE bounds (E[T]) ─────────────
+save_dlt_comparison_plot(E_T_lower, E_T_upper, E_T_mid, E_T_lower_dlt, E_T_upper_dlt, E_T_mid_dlt,
+                          r"$\mathbb{E}[T]$ [K]", "TSE_2nd_order_bounds_vs_double_loop_TSE_E_T_vs_t.png")
+
+# ── Plot: 2nd-order TSE bounds vs double-loop TSE bounds (Var[T]) ───────────
+save_dlt_comparison_plot(Var_T_lower, Var_T_upper, Var_T_mid, Var_T_lower_dlt, Var_T_upper_dlt, Var_T_mid_dlt,
+                          r"$\mathrm{Var}[T]$ [K$^2$]", "TSE_2nd_order_bounds_vs_double_loop_TSE_Var_T_vs_t.png")
+
+print(f"\n{'':<20}{'IA lower':>12}{'IA upper':>12}{'DL-TSE lower':>14}{'DL-TSE upper':>14}")
+print(f"{'E[T] (t=450s)':<20}{E_T_lower[-1]:>12.4f}{E_T_upper[-1]:>12.4f}"
+      f"{E_T_lower_dlt[-1]:>14.4f}{E_T_upper_dlt[-1]:>14.4f}")
+print(f"{'Var[T] (t=450s)':<20}{Var_T_lower[-1]:>12.4f}{Var_T_upper[-1]:>12.4f}"
+      f"{Var_T_lower_dlt[-1]:>14.4f}{Var_T_upper_dlt[-1]:>14.4f}")
 
 # ── Runtime: TSE (measured) vs double-loop MC (estimated) ──────────────────
 # double_loop_MCS_data.npz was generated once (~90s at this resolution), so
